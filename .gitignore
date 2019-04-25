@@ -1,3 +1,9 @@
 # Pycharm resources
 .idea/
 *.iml
+
+
+
+# hwang
+hwang/data/
+hwang/.idea/

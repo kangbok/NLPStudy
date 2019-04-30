@@ -3,10 +3,12 @@ import time
 import sys
 import csv
 
+# Third-party packages
 import numpy as np
 import tensorflow as tf
 from gensim.models import Word2Vec
 
+# local module in the same directory
 from BatchGenerator import BatchGenerator
 
 
@@ -71,7 +73,9 @@ def get_sents_words_vector(sents_words_index, wv_vectors, max_seq):
         sys.stdout.write("\r[%d/%d] (%d secs)" %
                          (i + 1, len(sents_words_index), (int)(time.time() - time_start)))
     print()
-    sents_words_vector = np.array(sents_words_vector, dtype=tf.float32)
+    sents_words_vector = np.array(sents_words_vector, dtype=np.float32)
+
+    # print(sents_words_vector.shape)
 
     return sents_words_vector
 
@@ -128,7 +132,7 @@ if __name__ == "__main__":
     n_stack = 2
     n_batch_train = 1000
     learning_rate = 1e-4
-    n_epoch_train = 30
+    n_epoch_train = 5
 
     # train_morph_data = train_morph_data[:100]
     # train_ans_data = train_ans_data[:100]
@@ -173,9 +177,11 @@ if __name__ == "__main__":
     cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=logit, labels=y))
     optimizer = tf.train.AdamOptimizer(learning_rate).minimize(cost)
 
+    ## Evaluation
+    correct_prediction = tf.equal(tf.argmax(logit, 1), tf.argmax(y, 1))
+    num_correct_pred = tf.reduce_sum(tf.cast(correct_prediction, "float"))
 
     # Run
-
     sess = tf.Session()
     sess.run(tf.global_variables_initializer())
 
@@ -199,11 +205,13 @@ if __name__ == "__main__":
     del train_ans_data
     del train_batch_generator
 
-    # load test data
+    # Test
+    ## load test data
     test_morph_data = get_data_from_pickle(test_morph_file_path)
     test_ans_data = get_data_from_tsv(test_ans_file_path)
+    test_ans_data = [int(ans) for ans in test_ans_data]
 
-    # prepare test data as vector
+    ## prepare test data as vector
     print("Finding indexes of words in sentences in test data ...")
     test_sents_words_index = get_sents_words_index(test_morph_data, wv_words)
 
@@ -213,7 +221,16 @@ if __name__ == "__main__":
     ## make answer vector (one hot)
     test_ans_onehot = np.eye(n_class)[test_ans_data]
 
+
     ## Construct batch generator
-    n_batch_test = 5000
+    n_batch_test = 2000
     test_batch_generator = BatchGenerator(test_sents_words_vector, test_ans_onehot, n_batch_test)
+    num_total_correct = 0
+    while test_batch_generator.get_epoch() < 1:
+        batch_x, batch_y = test_batch_generator.next_batch()
+        num_total_correct += sess.run(num_correct_pred, feed_dict={x: batch_x, y: batch_y})
+
+    accuracy = num_total_correct / len(test_morph_data)
+    print("Test Accuracy: %04f" % accuracy)
+
 

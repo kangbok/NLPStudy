@@ -1,3 +1,4 @@
+import os
 import pickle
 
 import numpy as np
@@ -14,8 +15,8 @@ vocab_size = len(vocab_idx_dict.keys())
 lstm_units = 128
 
 encoder_x = tf.placeholder(tf.float32, [1, None, vocab_size])
-decoder_x = tf.placeholder(tf.float32, [1, None, vocab_size])
-decoder_y = tf.placeholder(tf.float32, [1, None, vocab_size])
+# decoder_x = tf.placeholder(tf.float32, [1, None, vocab_size])
+decoder_y = tf.placeholder(tf.int32, [1, None, vocab_size])
 
 ##### encoder
 encoder_cell = tf.nn.rnn_cell.LSTMCell(lstm_units)
@@ -45,38 +46,47 @@ def loop_fn_transition(time, prev_output, prev_state, prev_loop_state):
     output_logits = tf.add(tf.matmul(prev_output, W), b)
     prediction = tf.argmax(output_logits, axis=1)
 
-    if prediction[0] == tf.constant(1, dtype=tf.int64):
-        finish = time >= tf.constant(0, dtype=tf.int32)
-    else:
-        finish = time >= tf.constant(100, dtype=tf.int32)
+    def finish_true_fn():
+        return time >= tf.constant(0, dtype=tf.int32)
+    def finish_false_fn():
+        return time >= tf.constant(100, dtype=tf.int32)
 
-    # finished = tf.reduce_all(finish)  # -> boolean scalar
-    # input = tf.cond(finished, lambda: pad_step_embedded, get_next_input)
+    finish_condition = tf.equal(prediction, tf.reshape(tf.constant(1, dtype=tf.int64), (1,)))
+    finish = tf.cond(tf.reshape(finish_condition, ()), finish_true_fn, finish_false_fn)
 
-    inp = tf.reshape(tf.one_hot([prediction[0]], vocab_size), (1, vocab_size))
+    def input_true_fn():
+        return tf.zeros((1, vocab_size))
+    def input_false_fn():
+        return tf.reshape(tf.one_hot([prediction[0]], vocab_size), (1, vocab_size))
+
+    fin = time >= tf.constant(100, dtype=tf.int32)
+    inp = tf.cond(finish, input_true_fn, input_false_fn)
     state = prev_state
     emit_output = prev_output
     loop_state = prev_loop_state
 
-    return finish, inp, state, emit_output, loop_state
+    return fin, inp, state, emit_output, loop_state
 
 
 ##### decoder
 decoder_cell = tf.nn.rnn_cell.LSTMCell(lstm_units)
 decoder_dropout_cell = tf.nn.rnn_cell.DropoutWrapper(decoder_cell, output_keep_prob=0.75)
 decoder_output_ta, decoder_state, decoder_tmp = tf.nn.raw_rnn(decoder_dropout_cell, loop_fn, scope="decoder_rnn")
-decoder_output = decoder_output_ta.stack()
+decoder_outputs = decoder_output_ta.stack()
 
 ##### 학습 영역
-logit = tf.layers.dense(decoder_output, vocab_size, activation=None)
-cross_entropy = tf.nn.softmax_cross_entropy_with_logits(logits=logit, labels=decoder_y)
+decoder_max_steps, decoder_batch_size, decoder_dim = tf.unstack(tf.shape(decoder_outputs))
+decoder_outputs_flat = tf.reshape(decoder_outputs, (-1, decoder_dim))
+decoder_logits_flat = tf.add(tf.matmul(decoder_outputs_flat, W), b)
+decoder_logits = tf.reshape(decoder_logits_flat, (decoder_max_steps, decoder_batch_size, vocab_size))
+
+# re_decoder_y = tf.reshape(decoder_y, (-1, vocab_size))
+cross_entropy = tf.nn.softmax_cross_entropy_with_logits_v2(labels=decoder_y, logits=decoder_logits)
 loss = tf.reduce_mean(cross_entropy)
 optimizer = tf.train.AdamOptimizer(1e-4).minimize(loss)
 
-
-################################################################################# 데이터 불러오기
-with open("../resource/corpus_test.pkl", "rb") as f:
-    corpus = pickle.load(f)
+##### 예측 영역
+decoder_prediction = tf.argmax(decoder_logits, 2)
 
 
 ################################################################################# 전처리 함수
@@ -105,18 +115,38 @@ def create_encoder_decoder_io(one_hot_matrix):
     decoder_i = np.append(start_char_vector, one_hot_matrix[1:])
     decoder_o = np.append(one_hot_matrix[1:], end_char_vector)
 
+    for _ in range(100 - int((decoder_o.shape[0] / vocab_size))):
+        decoder_o = np.append(decoder_o, np.zeros((vocab_size,), dtype=int))
+
     encoder_i = encoder_i.reshape((1, 1, -1))
     decoder_i = decoder_i.reshape((1, -1, vocab_size))
     decoder_o = decoder_o.reshape((1, -1, vocab_size))
 
     return encoder_i, decoder_i, decoder_o
 
+################################################################################# 모델 저장
+saver = tf.train.Saver()
+SAVER_DIR = "../model"
+checkpoint_path = os.path.join(SAVER_DIR, "seq2seq_model")
+ckpt = tf.train.get_checkpoint_state(SAVER_DIR)
+
+
+################################################################################# 데이터 불러오기
+with open("../resource/corpus_train.pkl", "rb") as f:
+    corpus = pickle.load(f)
+
+def print_tmp_result(x_input, predicted_result):
+    input_word = idx_vocab_dict[np.argmax(x_input)]
+    output_list = [idx_vocab_dict[int(i)] for i in predicted_result]
+    print("%s -> %s" % (input_word, output_list))
+
 
 ################################################################################# 실행
 # 훈련용, 테스트용 데이터 분리
-cutting_point = 40000
+cutting_point = 15000
 train_x = corpus[:cutting_point]
 test_x = corpus[cutting_point:]
+
 
 with tf.Session() as sess:
     sess.run(tf.global_variables_initializer())
@@ -133,20 +163,19 @@ with tf.Session() as sess:
             continue
 
         encoder_x_, decoder_x_, decoder_y_ = create_encoder_decoder_io(one_hot_matrix)
-
-        # a = sess.run(output_rnn, feed_dict={x: x_, y: y_})
-        # b = sess.run(state_rnn, feed_dict={x: x_, y: y_})
-        # d = sess.run(output_concat, feed_dict={x: x_, y: y_})
-        c = sess.run(decoder_output_ta, feed_dict={encoder_x: encoder_x_, decoder_x: decoder_x_, decoder_y: decoder_y_})
-
-        print("a")
-
-        # 매 1,000개마다 100개를 가지고 성능 테스트
-        # if cnt % 10 == 0:
-        #     train_accracy = sess.run(accuracy, feed_dict={x: x_, y: y_})
-        #     print("step %d, training accuracy %g" % (idx, train_accracy))
+        # ccc = sess.run(decoder_outputs, feed_dict={encoder_x: encoder_x_, decoder_y: decoder_y_})
         #
-        # sess.run(optimizer, feed_dict={x: x_, y: y_})
-        #
-        # cnt += 1
+        # print("a")
+
+        # 매 1,000개마다 step print
+        if cnt % 1000 == 0:
+            test_result = sess.run(decoder_prediction, feed_dict={encoder_x: encoder_x_, decoder_y: decoder_y_})
+            print("step %s" % cnt)
+            print_tmp_result(encoder_x_, test_result)
+
+        sess.run(optimizer, feed_dict={encoder_x: encoder_x_, decoder_y: decoder_y_})
+
+        cnt += 1
+
+    saver.save(sess, checkpoint_path)
 

@@ -167,15 +167,14 @@ with tf.Session() as sess:
         #
         # print("a")
 
-        # 매 1,000개마다 step print
+        # 매 1,000개마다 step print, 모델 저장
         if cnt % 1000 == 0:
             test_result = sess.run(decoder_prediction, feed_dict={encoder_x: encoder_x_, decoder_y: decoder_y_})
             print("step %s" % cnt)
             print_tmp_result(encoder_x_, test_result)
 
+            saver.save(sess, checkpoint_path)
+
         sess.run(optimizer, feed_dict={encoder_x: encoder_x_, decoder_y: decoder_y_})
 
         cnt += 1
-
-    saver.save(sess, checkpoint_path)
-

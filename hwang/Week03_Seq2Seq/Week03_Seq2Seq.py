@@ -2,6 +2,7 @@ import pickle
 import time
 import sys
 import csv
+import copy
 
 # Third-party packages
 import numpy as np
@@ -46,26 +47,133 @@ def get_data_from_tsv(tsv_file_name):
 
 if __name__ == "__main__":
     # load train data
-    train_morph_data = get_data_from_pickle(train_morph_file_path)
-    print(len(train_morph_data))
+    trainMorphData = get_data_from_pickle(train_morph_file_path)
+    print(len(trainMorphData))
     print("See a Train Data Sample")
-    print(train_morph_data[0])
+    print(trainMorphData[0])
     print()
 
-    train_ans_data = get_data_from_tsv(train_ans_file_path)
-    train_ans_data = [int(ans) for ans in train_ans_data]
-    print(len(train_ans_data))
+    trainAnsData = get_data_from_tsv(train_ans_file_path)
+    trainAnsData = [int(ans) for ans in trainAnsData]
+    print(len(trainAnsData))
     print("See a Train Answer Sample")
-    print(type(train_ans_data[0]))
-    print(train_ans_data[0])
+    print(type(trainAnsData[0]))
+    print(trainAnsData[0])
     print()
 
-    all_unique_morphs = set()
-    for sent in train_morph_data:
-        all_unique_morphs.update(sent)
+    # hyper parameters
+    seqLen = 10
+    numBatchTrain = 1000
+    vecInputDim = None
+    vecOutputDim = None
+    numHidden = None
+    numStack = 2
+    learningRate = 1e-4
+    numEpochTrain = 5
 
-    all_unique_morphs = list(all_unique_morphs)
-    print(len(all_unique_morphs))
+    startSeq = ["<BOS-{}>".format(i) for i in range(seqLen-1)]
+    startSeq.reverse()
+
+    for i, sentMorph in enumerate(trainMorphData):
+        augSentMorph = copy.deepcopy(startSeq)
+        augSentMorph.extend(sentMorph)
+        augSentMorph.append("<EOS>")
+        trainMorphData[i] = augSentMorph
+
+    allUniqueMorphs = set()
+    for sent in trainMorphData:
+        allUniqueMorphs.update(sent)
+
+    indexToMorph = list(allUniqueMorphs)
+    morphToIndex = dict()
+    for index, morph in enumerate(indexToMorph):
+        morphToIndex[morph] = index
+
+    vecInputDim = len(indexToMorph) + 1
+    vecOutputDim = len(indexToMorph)
+    numHidden = vecOutputDim
+
+    identityMatrix = np.eye(len(indexToMorph))
+    oneHotsForPositiveInput = \
+        np.concatenate((identityMatrix, np.ones((len(indexToMorph), 1), dtype=int)),
+                        axis=1)
+    oneHotsForNegativeInput = \
+        np.concatenate((identityMatrix, np.zeros((len(indexToMorph), 1), dtype=int)),
+                        axis=1)
+
+    trainMorphIdx = list()
+    trainSentOneHotInputRaw = list()  # will change to np.ndarray
+    trainSentOneHotOutputRaw = list()  # will change to np.ndarray
+
+    for i, sentMorph in enumerate(trainMorphData):
+        sentIdx = [morphToIndex[morph] for morph in sentMorph]
+        trainMorphIdx.append(sentIdx)
+
+        if (trainAnsData[i] > 0):
+            sentInputOneHot = oneHotsForPositiveInput[sentIdx]
+        else:
+            sentInputOneHot = oneHotsForNegativeInput[sentIdx]
+        trainSentOneHotInputRaw.append(sentInputOneHot)
+
+        sentOutputOneHot = identityMatrix[sentIdx]
+        trainSentOneHotOutputRaw.append(sentOutputOneHot)
+
+    trainSentOneHotInputRnn = list()
+    trainSentOneHotOutputRnn = list()
+
+    for iSent in range(len(trainSentOneHotInputRaw)):
+        oneSentInputRaw = trainSentOneHotInputRaw[iSent]
+        oneSentOutputRaw = trainSentOneHotOutputRaw[iSent]
+        for jPart in range(oneSentInputRaw.shape(0) - seqLen):
+            input = oneSentInputRaw[jPart:jPart + seqLen]
+            trainSentOneHotInputRnn.append(input)
+            output = oneSentOutputRaw[jPart+1:jPart + seqLen + 1]
+            trainSentOneHotOutputRnn.append(output)
+
+    trainSentOneHotInputRnn = np.array(trainSentOneHotInputRnn, dtype=np.float32)
+    trainSentOneHotOutputRnn = np.array(trainSentOneHotOutputRnn, dtype=np.float32)
+
+    ## Construct batch generator
+    train_batch_generator = BatchGenerator(trainSentOneHotInputRnn, trainSentOneHotOutputRnn, numBatchTrain)
+
+
+    # Draw graph
+
+    ## input, output
+    x = tf.placeholder(tf.float32, [None, seqLen, vecInputDim])
+    y = tf.placeholder(tf.float32, [None, seqLen, vecOutputDim])
+
+    ## RNN
+    cells = [tf.nn.rnn_cell.LSTMCell(numHidden) for _ in range(numStack)]
+    stackedCell = tf.nn.rnn_cell.MultiRNNCell(cells)
+    outputsRnn, statesRnn = tf.nn.dynamic_rnn(stackedCell, x, dtype=tf.float32)
+
+    outputsRnnNor = tf.math.l2_normalize(outputsRnn, axis=2)
+
+    cost = tf.losses.mean_squared_error(y, outputsRnnNor)
+    optimizer = tf.train.AdamOptimizer(learningRate).minimize(cost)
+
+    # Run
+    sess = tf.Session()
+    sess.run(tf.global_variables_initializer())
+
+    time_start = time.time()
+    cost_epoch = 0
+    while train_batch_generator.get_epoch() < n_epoch_train:
+        batch_x, batch_y = train_batch_generator.next_batch()
+        _, cost_batch = sess.run([optimizer, cost],
+                                 feed_dict={x: batch_x, y: batch_y})
+        cost_epoch += cost_batch
+        if train_batch_generator.get_epoch_end():
+            print('Epoch:', '%02d' % (train_batch_generator.get_epoch()),
+                  '  cost =', '{:.10f}'.format(cost_epoch / len(train_morph_data)),
+                  "(%d secs)" % ((int)(time.time() - time_start)))
+            cost_epoch = 0
+
+    print("Training End")
+    
+
+
 
 
 

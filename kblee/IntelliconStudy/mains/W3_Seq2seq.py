@@ -144,7 +144,7 @@ ckpt = tf.train.get_checkpoint_state(SAVER_DIR)
 
 
 ################################################################################# 데이터 불러오기
-with open("../resource/corpus_train.pkl", "rb") as f:
+with open("../resource/corpus_train_wo_frequent_words.pkl", "rb") as f:
     corpus = pickle.load(f)
 
 def print_tmp_result(x_input, predicted_result):
@@ -155,7 +155,7 @@ def print_tmp_result(x_input, predicted_result):
 
 ################################################################################# 실행
 # 훈련용, 테스트용 데이터 분리
-cutting_point = 15000
+cutting_point = 1
 train_x = corpus[:cutting_point]
 test_x = corpus[cutting_point:]
 
@@ -166,28 +166,34 @@ with tf.Session() as sess:
     BATCH_SIZE = 1
     cnt = 0
 
-    for idx in range(0, len(train_x), BATCH_SIZE):
-        input_words = train_x[idx:idx + BATCH_SIZE]
+    for epoch in range(5000):
+        for idx in range(0, len(train_x), BATCH_SIZE):
+            input_words = train_x[idx:idx + BATCH_SIZE]
 
-        one_hot_matrix = create_one_hot_matrix(input_words)
+            one_hot_matrix = create_one_hot_matrix(input_words)
 
-        if len(one_hot_matrix) <= 1:
-            continue
+            if len(one_hot_matrix) <= 1:
+                continue
 
-        encoder_x_, decoder_x_, decoder_y_ = create_encoder_decoder_io(one_hot_matrix)
-        # ccc = sess.run(decoder_outputs_flat, feed_dict={encoder_x: encoder_x_, decoder_y: decoder_y_})
-        #
-        # print("a")
+            encoder_x_, decoder_x_, decoder_y_ = create_encoder_decoder_io(one_hot_matrix)
+            # ccc = sess.run(decoder_outputs_flat, feed_dict={encoder_x: encoder_x_, decoder_y: decoder_y_})
+            #
+            # print("a")
 
-        # 매 10개마다 step print, 모델 저장
-        if cnt % 10 == 0:
+            # 매 10개마다 step print, 모델 저장
+            # if cnt % 10 == 0:
+            #     test_result = sess.run(decoder_prediction, feed_dict={encoder_x: encoder_x_, decoder_y: decoder_y_})
+            #     print("step %s" % cnt)
+            #     print(input_words)
+            #     print_tmp_result(encoder_x_, test_result)
+
             test_result = sess.run(decoder_prediction, feed_dict={encoder_x: encoder_x_, decoder_y: decoder_y_})
             print("step %s" % cnt)
             print(input_words)
             print_tmp_result(encoder_x_, test_result)
 
-            # saver.save(sess, checkpoint_path)
+                # saver.save(sess, checkpoint_path)
 
-        sess.run(optimizer, feed_dict={encoder_x: encoder_x_, decoder_y: decoder_y_})
+            sess.run(optimizer, feed_dict={encoder_x: encoder_x_, decoder_y: decoder_y_})
 
-        cnt += 1
+            cnt += 1

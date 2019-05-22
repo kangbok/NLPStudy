@@ -6,15 +6,16 @@ with open("../resource/corpus_test.pkl", "rb") as f:
 
 print("test data loading!")
 
-with open("../resource/corpus_train.pkl", "rb") as f:
+with open("../resource/corpus_train_wo_frequent_words.pkl", "rb") as f:
     corpus_training = pickle.load(f)
 
 print("training data loading!")
 
 ##################################################################### test, traing 데이터 하나로 합침
 all_sentence_list = []
-all_sentence_list.extend(corpus_test)
+# all_sentence_list.extend(corpus_test)
 all_sentence_list.extend(corpus_training)
+all_sentence_list = all_sentence_list[:10]
 
 ##################################################################### 단어 사전 만듬
 all_word_list = []
@@ -35,8 +36,8 @@ for word in all_word_list:
     idx += 1
 
 
-with open("../resource/vocab_idx_dict.pkl", "wb") as f:
+with open("../resource/vocab_idx_dict10.pkl", "wb") as f:
     pickle.dump(vocab_idx_dict, f)
 
-with open("../resource/idx_vocab_dict.pkl", "wb") as f:
+with open("../resource/idx_vocab_dict10.pkl", "wb") as f:
     pickle.dump(idx_vocab_dict, f)

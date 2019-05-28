@@ -71,7 +71,7 @@ predictions = tf.identity(decoder_output_inf.sample_id, name='predictions')
 
 ################################################################################# 전처리 함수
 # 문장을 word idx의 리스트로 바꿔줌
-def create_word_idx_list(stc_list):
+def create_word_idx_list(stc_list, batch):
     out_encoder_list = []
     out_decoder_list = []
 
@@ -88,26 +88,31 @@ def create_word_idx_list(stc_list):
         out_encoder_list.append(one_encoder_list)
         out_decoder_list.append(one_decoder_list)
 
-    out_encoder_list = np.asarray(out_encoder_list)
-    out_encoder_list = out_encoder_list.reshape([1,-1])
-
-    out_decoder_list = np.asarray(out_decoder_list)
-    out_decoder_list = out_decoder_list.reshape([1, -1])
+    out_encoder_list = np.asarray(out_encoder_list, dtype="int32")
+    out_encoder_list = out_encoder_list.reshape([batch,-1])
 
     return out_encoder_list, out_decoder_list
 
 
-def rectify_decoder_input(word_idx_list):
-    decoder_i = np.append(0, word_idx_list) # 0의 의미 : <S> 토큰
-    decoder_size = np.asarray(len(word_idx_list)).reshape((1, ))
+def rectify_decoder_input(word_idx_list, batch):
+    out_decoder_i = []
+    out_decoder_size = []
 
-    # 100으로 사이즈 맞춰줄 때 쓰던 부분
-    for _ in range(100 - len(decoder_i)):
-        decoder_i = np.append(decoder_i, 2) # 2의 의미 : <P> 토큰
+    for one_list in word_idx_list:
+        decoder_i = np.append(0, np.asarray(one_list)) # 0의 의미 : <S> 토큰
+        decoder_size = len(one_list)
 
-    decoder_i = decoder_i.reshape((1, -1))
+        # 100으로 사이즈 맞춰줄 때 쓰던 부분
+        for _ in range(100 - len(decoder_i)):
+            decoder_i = np.append(decoder_i, 1) # 1의 의미 : <E> 토큰
 
-    return decoder_i, decoder_size
+        out_decoder_i.append(decoder_i)
+        out_decoder_size.append(decoder_size)
+
+    out_decoder_i = np.asarray(out_decoder_i, dtype=np.int).reshape((batch, -1))
+    out_decoder_size = np.asarray(out_decoder_size, dtype=np.int).reshape((batch, ))
+
+    return out_decoder_i, out_decoder_size
 
 ################################################################################# 모델 저장
 saver = tf.train.Saver()
@@ -121,11 +126,11 @@ with open("../resource/corpus_train_wo_frequent_words.pkl", "rb") as f:
     corpus = pickle.load(f)
 
 def print_tmp_result(x_input, predicted_result):
-    input_word = idx_vocab_dict[np.max(x_input)]
+    input_word = idx_vocab_dict[np.max(x_input[0])]
 
-    predicted_result = predicted_result.reshape(100, )
+    predicted_result = predicted_result.reshape(100, -1)
 
-    output_list = [idx_vocab_dict[int(i)] for i in predicted_result]
+    output_list = [idx_vocab_dict[int(i)] for i in predicted_result[0]]
     print("%s -> %s" % (input_word, output_list))
 
     with open("예시.txt", "a") as f:
@@ -142,30 +147,24 @@ test_x = corpus[cutting_point:]
 with tf.Session() as sess:
     sess.run(tf.global_variables_initializer())
 
-    BATCH_SIZE = 1
+    BATCH_SIZE = 100
     cnt = 0
 
     for epoch in range(5000):
         for idx in range(0, len(train_x), BATCH_SIZE):
             input_words = train_x[idx:idx + BATCH_SIZE]
 
-            encoder_x_, decoder_idx_list = create_word_idx_list(input_words)
+            encoder_x_, decoder_idx_list = create_word_idx_list(input_words, BATCH_SIZE)
+            decoder_x_, decoder_size_ = rectify_decoder_input(decoder_idx_list, BATCH_SIZE)
 
-            decoder_x_, decoder_size_ = rectify_decoder_input(decoder_idx_list)
-
-            # 매 1000개마다 step print, 모델 저장
-            if cnt % 1000 == 0:
+            # 매 100개 batch마다 step print, 모델 저장
+            if cnt % 100 == 0:
                 test_result = sess.run(predictions, feed_dict={encoder_x: encoder_x_, real_decoder_length: decoder_size_})
                 print("step %s" % cnt)
-                print(input_words)
+                print(input_words[0])
                 print_tmp_result(encoder_x_, test_result)
                 saver.save(sess, checkpoint_path)
-
-                # with open("데이터10-단어수6만.txt", "a") as f:
-                #     f.write("step %s\n" % cnt)
-                #     f.write(" ".join(input_words[0]) + "\n")
 
             sess.run(optimizer, feed_dict={encoder_x: encoder_x_, decoder_x: decoder_x_, real_decoder_length: decoder_size_})
 
             cnt += 1
-

@@ -152,10 +152,13 @@ def print_tmp_result(x_input, predicted_result):
     output_list = [idx_vocab_dict[int(i)] for i in predicted_result]
     print("%s -> %s" % (input_word, output_list))
 
+    with open("데이터10-단어수6만.txt", "a") as f:
+        f.write("%s -> %s\n" % (input_word, output_list))
+
 
 ################################################################################# 실행
 # 훈련용, 테스트용 데이터 분리
-cutting_point = 1
+cutting_point = 10
 train_x = corpus[:cutting_point]
 test_x = corpus[cutting_point:]
 
@@ -190,6 +193,11 @@ with tf.Session() as sess:
             test_result = sess.run(decoder_prediction, feed_dict={encoder_x: encoder_x_, decoder_y: decoder_y_})
             print("step %s" % cnt)
             print(input_words)
+
+            with open("데이터10-단어수6만.txt", "a") as f:
+                f.write("step %s\n" % cnt)
+                f.write(" ".join(input_words[0]) + "\n")
+
             print_tmp_result(encoder_x_, test_result)
 
                 # saver.save(sess, checkpoint_path)

@@ -15,7 +15,7 @@ class BatchGenerator():
         self.epoch_end = False
 
     def next_batch(self):
-        print ("next_batch")
+        # print ("next_batch")
         next_cursor = self.batch_size + self.cursor
         if next_cursor >= self.data_size:
             batch_in_data = [self.in_data[idx] for idx in self.shuffle_index[self.cursor:]]

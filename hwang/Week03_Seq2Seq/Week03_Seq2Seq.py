@@ -49,11 +49,12 @@ def get_data_from_tsv(tsv_file_name):
 def indexesToInputOneHots(morph_indexes, ans, num_morph):
     oneHotNAnsList = list()
     for index in morph_indexes:
-        oneHot = np.zeros((1, num_morph+1), dtype=int)
-        oneHot[0][index] = 1
+        oneHot = np.zeros((num_morph+1, ), dtype=int)
+        oneHot[index] = 1
         if ans == 1:
-            oneHot[0][-1] = 1
+            oneHot[-1] = 1
         oneHotNAnsList.append(oneHot)
+
     return np.array(oneHotNAnsList)
 
 def batchIndexesToInputOneHots(bacthIndexesNAns, num_morph):
@@ -64,8 +65,8 @@ def batchIndexesToInputOneHots(bacthIndexesNAns, num_morph):
 def indexesToOutputOneHots(morph_indexes, num_morph):
     oneHotList = list()
     for index in morph_indexes:
-        oneHot = np.zeros((1, num_morph), dtype=int)
-        oneHot[0][index] = 1
+        oneHot = np.zeros((num_morph,), dtype=int)
+        oneHot[index] = 1
         oneHotList.append(oneHot)
     return np.array(oneHotList)
 
@@ -82,7 +83,7 @@ if __name__ == "__main__":
     print(trainMorphData[0])
     print()
 
-    trainMorphData = trainMorphData[:1]
+    # trainMorphData = trainMorphData[:10020]
 
     trainAnsData = get_data_from_tsv(train_ans_file_path)
     trainAnsData = [int(ans) for ans in trainAnsData]
@@ -100,13 +101,13 @@ if __name__ == "__main__":
         morphToIndex[word] = i
 
     # hyper parameters
-    seqLen = 2
-    numBatchTrain = 1
+    seqLen = 10
+    numBatchTrain = 100
     vecInputDim = None
     vecOutputDim = None
-    numHidden = None
+    numHidden = 256
     numStack = 2
-    learningRate = 1e-4
+    learningRate = 1e-3
     numEpochTrain = 5
 
     startSeq = ["<BOS-{}>".format(i) for i in range(seqLen-1)]
@@ -155,14 +156,16 @@ if __name__ == "__main__":
             trainSentIndexNAnsInputRnn.append((inputIndex, ans))
             outputIndex = aSentIndex[jPart+1:jPart+seqLen+1]
             trainSentIndexOutputRnn.append(outputIndex)
+            # print(len(outputIndex))
 
     print("trainSentIndexNAnsInputRnn length - %d" % len(trainSentIndexNAnsInputRnn))
+    print("one of trainSentIndexNAnsInputRnn length - %d" % len(trainSentIndexNAnsInputRnn[0][0]))
     print("trainSentIndexOutputRnn length - %d" % len(trainSentIndexOutputRnn))
+    print("one of trainSentIndexOutputRnn length - %d" % len(trainSentIndexOutputRnn[0]))
 
     numMorph = len(morphs)
     vecInputDim = numMorph + 1
     vecOutputDim = numMorph
-    numHidden = vecOutputDim
 
     ## Construct batch generator
     train_batch_generator = BatchGenerator(trainSentIndexNAnsInputRnn, trainSentIndexOutputRnn, numBatchTrain)
@@ -181,27 +184,37 @@ if __name__ == "__main__":
 
     outputsRnn, statesRnn = tf.nn.dynamic_rnn(tf.nn.rnn_cell.LSTMCell(numHidden), x, dtype=tf.float32)
 
+    ## In each sentence, the hidden vector of the final step is only needed.
+    ## (batch_size, n_step, n_hidden]) -> [n_step, batch_size, n_hidden]
+    # outputsRnn = tf.transpose(outputsRnn, [1, 0, 2])
+    outputsRnn = tf.reshape(outputsRnn, [tf.shape(outputsRnn)[0], -1])
+    # lastOutputRnn = outputsRnn[-1]
 
-    outputsRnnNor = tf.nn.l2_normalize(outputsRnn, axis=2)
+    ## Full-connected layer
+    W = tf.Variable(tf.truncated_normal([numHidden*seqLen, vecOutputDim]))
+    b = tf.Variable(tf.truncated_normal([vecOutputDim]))
 
-    cost = tf.losses.mean_squared_error(y, outputsRnnNor)
+    logit = tf.matmul(outputsRnn, W) + b
+
+    yLast = tf.transpose(y, [1, 0, 2])[-1]
+
+    ## Get cost and define optimizer
+    cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=logit, labels=yLast))
     optimizer = tf.train.AdamOptimizer(learningRate).minimize(cost)
+
 
     print("Graph is drawn and session starts")
 
     # Run
     sess = tf.Session()
     sess.run(tf.global_variables_initializer())
-    print("tf.global_variables_initializer()")
+    # print("tf.global_variables_initializer()")
     time_start = time.time()
     cost_epoch = 0
     while train_batch_generator.get_epoch() < numEpochTrain:
         batchIndexesX, batchIndexesY = train_batch_generator.next_batch()
-        print("batch indexes is got")
         batchX = batchIndexesToInputOneHots(batchIndexesX, numMorph)
-        print("batch input vec is got")
-        batchY = batchIndexesToOutputOneHots(batchIndexesX, numMorph)
-        print("batch output vec is got")
+        batchY = batchIndexesToOutputOneHots(batchIndexesY, numMorph)
         _, cost_batch = sess.run([optimizer, cost],
                                  feed_dict={x: batchX, y: batchY})
         cost_epoch += cost_batch

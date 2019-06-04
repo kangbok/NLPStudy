@@ -1,0 +1,144 @@
+{
+    "hseq": 11,
+    "title": {
+        "eng": "EXCLUSIVE ECONOMIC ZONE ACT",
+        "kor": "배타적 경제수역법"
+    },
+    "update_dates": {
+        "eng": ["Act No. 5151, Aug.  8, 1996"],
+        "kor": ["신규제정 1996.  8.  8   법률  제 5151 호"]
+    },
+    "articles": [
+        [
+            {
+                "class": "articletitle",
+                "contents": {
+                    "eng": "Article 1 (Establishment of Exclusive Economic Zone)",
+                    "kor": "제1조 (배타적경제수역의 설정)"
+                }
+            },
+            {
+                "class": "none",
+                "contents": {
+                    "eng": "The Republic of Korea shall establish an exclusive economic zone referred to in the United Nations Convention on the Law of the Sea(hereinafter referred to as the “Convention”) under this Act.",
+                    "kor": "대한민국은 이 법에 의하여 해양법에관한국제연합협약(이하 \"協約\"이라 한다)에 규정된 배타적경제수역을 설정한다."
+                }
+            }
+        ],
+        [
+            {
+                "class": "articletitle",
+                "contents": {
+                    "eng": "Article 2 (Scope of Exclusive Economic Zone)",
+                    "kor": "제2조 (배타적경제수역의 범위)"
+                }
+
+            },
+            {
+                "class": "hang",
+                "number": {
+                    "eng": "(1)",
+                    "kor": "①"
+                },
+                "contents": {
+                    "eng": "The exclusive economic zone of the Republic of Korea shall be the zone other than the territorial sea from among the sea area stretching from the outer line of the baseline referred to in Article 2 of the Territorial Sea and Contiguous Zone Act in accordance with the Convention by 200 nautical miles.",
+                    "kor": "대한민국의 배타적경제수역은 협약의 규정에 맞추어 영해및접속수역법 제2조에 규정된 기선으로부터 그 외측 200해리의 선까지에 이르는 수역중 대한민국의 영해를 제외한 수역으로 한다."
+                }
+            },
+            {
+                "class": "hang",
+                "number": {
+                    "eng": "(2)",
+                    "kor": "②"
+                },
+                "contents": {
+                    "eng": "The delimitation of the exclusive economic zone between states with opposite or adjacent to the Republic of Korea (hereinafter referred to as the “relevant States”) shall, notwithstanding the provisions of paragraph (1) be established by agreement with the relevant States on the basis of international law.",
+                    "kor": "대한민국과 대향하거나 인접하고 있는 국가(이하 \"關係國\"이라 한다)간의 배타적경제수역의 경계는 제1항의 규정에 불구하고 국제법을 기초로 관계국과의 합의에 따라 획정한다."
+                }
+            }
+        ],
+        [
+            {
+                "class": "articletitle",
+                "contents": {
+                    "eng": "Article 3 (Rights in Exclusive Economic Zone)",
+                    "kor": "제3조 (배타적경제수역에 있어서의 권리)"
+                }
+
+            },
+            {
+                "class": "none",
+                "contents": {
+                    "eng": "The Republic of Korea shall have the following rights in the exclusive economic zone:",
+                    "kor": "대한민국은 배타적경제수역에서 다음 각호의 권리를 가진다."
+                }
+            },
+            {
+                "class": "ho",
+                "number": {
+                    "eng": "1.",
+                    "kor": "1."
+                },
+                "contents": {
+                    "eng": "Sovereign rights the purpose of exploring, exploiting, conserving and managing the natural resources, whether living or non-living, of the waters superjacent to the sea-bed and of the sea-bed and its subsoil, and with regard to other activities for the economic exploitation and exploration of the zone, such as the production of energy from the water, current and winds;",
+                    "kor": "해저의 상부수역, 해저 및 그 하층토의 생물이나 무생물등 천연자원의 탐사·개발·보존 및 관리를 목적으로 하는 주권적 권리와 해수·해류 및 해풍을 이용한 에너지생산등 경제적 개발 및 탐사를 위한 그밖의 활동에 관한 주권적 권리"
+                }
+            },
+            {
+                "class": "ho",
+                "number": {
+                    "eng": "2.",
+                    "kor": "2."
+                },
+                "contents": {
+                    "eng": "Jurisdiction as provided for in the Convention with regard to the followings:",
+                    "kor": "다음 각목에 관하여 협약에 규정된 관할권"
+                }
+            },
+            {
+                "class": "mok",
+                "number": {
+                    "eng": "(a)",
+                    "kor": "가."
+                },
+                "contents": {
+                    "eng": "The establishment and use of artificial islands, installations and structures;",
+                    "kor": "인공섬·시설 및 구조물의 설치·사용"
+                }
+            },
+            {
+                "class": "mok",
+                "number": {
+                    "eng": "(b)",
+                    "kor": "나."
+                },
+                "contents": {
+                    "eng": "marine scientific research; and",
+                    "kor": "해양과학조사"
+                }
+            },
+            {
+                "class": "mok",
+                "number": {
+                    "eng": "(c)",
+                    "kor": "다."
+                },
+                "contents": {
+                    "eng": "The protection and preservation of the marine environment.",
+                    "kor": "해양환경의 보호 및 보전"
+                }
+            },
+            {
+                "class": "ho",
+                "number": {
+                    "eng": "3.",
+                    "kor": "3."
+                },
+                "contents": {
+                    "eng": "Other rights as provided for in the Convention.",
+                    "kor": "협약에 규정된 그밖의 권리"
+                }
+            }
+        ]
+    ]
+}

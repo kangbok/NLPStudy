@@ -185,7 +185,7 @@ with tf.Session() as sess:
 
             # 매 100개 batch마다 step print, 모델 저장
             if cnt % 100 == 0:
-                test_result = sess.run(predictions, feed_dict={encoder_x: encoder_x_, real_decoder_length: decoder_size_})
+                test_result = sess.run(predictions, feed_dict={encoder_x: encoder_x_})
                 print("step %s" % cnt)
                 print(input_words[0])
                 print(output_words[0])

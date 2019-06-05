@@ -24,7 +24,7 @@ with tf.Session() as sess:
     INPUT_LENGTH = 35
 
     for _ in range(INPUT_LENGTH - len(input_x)):
-        input_x.append(0)
+        input_x.append(2)
 
     input_x = np.asarray(input_x).reshape(1, -1)
 

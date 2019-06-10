@@ -29,7 +29,7 @@ for hseq in range(initial_hseq, 50000):
     # 원하는 영역으로 접근
     wanted_area = soup2.find("div", {"class": "lawmultiview"})
 
-    # 가끔 lawmultiview라는 div가 없음
+    # 가끔 lawmultiview라는 div가 없음. 이럴 때는 그냥 continue
     if not wanted_area:
         continue
 
@@ -43,18 +43,79 @@ for hseq in range(initial_hseq, 50000):
         if type(tr) != Tag:
             continue
 
+        # 조 단위로 묶인 내용
         td_eng = tr.contents[1]
         td_kor = tr.contents[3]
 
-        text_eng = td_eng.text.strip()
-        text_kor = td_kor.text.strip()
-
-        if not text_eng or not text_kor:
+        # 내용 없으면 continue
+        if not td_eng.text.strip() or not td_kor.text.strip():
             continue
 
+        # 조제목 텍스트 얻기
+        article_title_eng = td_eng.find("div", {"class": "articletitle"})
+        article_title_kor = td_kor.find("div", {"class": "articletitle"})
+
+        # 조제목이 없으면 그냥 text 바로 출력 후 continue
+        if not article_title_eng or not article_title_kor:
+            # 아무래도 이상한 게 많아서 그냥 조항쪽만 출력하기로.
+            # print("=" * 50)
+            # print(td_eng.text.strip())
+            # print(td_kor.text.strip())
+
+            continue
+
+        # 조항 얻기
+        hang_eng = td_eng.find_all("div", {"class": "hang"})
+        hang_kor = td_kor.find_all("div", {"class": "hang"})
+
+        if not hang_eng or not hang_kor:
+            hang_eng = td_eng.find_all("div", {"class": "none"})
+            hang_kor = td_kor.find_all("div", {"class": "none"})
+
+        hang_eng_text_list = []
+        hang_kor_text_list = []
+
+        for i in range(min(len(hang_eng), len(hang_kor))):
+            hang_eng_text = ""
+            hang_kor_text = ""
+
+            # 조항의 숫자 빼고 내용만 얻기
+            for j in range(len(hang_eng[i])):
+                hang_cont_eng = hang_eng[i].contents[j].find("span")
+
+                if hang_cont_eng:
+                    hang_eng_text += hang_cont_eng.text
+                else:
+                    hang_eng_text += hang_eng[i].contents[j].text
+
+            for j in range(len(hang_kor[i])):
+                hang_cont_kor = hang_kor[i].contents[j].find("span")
+
+                if hang_cont_kor:
+                    hang_kor_text += hang_cont_kor.text
+                else:
+                    hang_kor_text += hang_kor[i].contents[j].text
+
+            # for span in hang_eng:
+            #     hang_eng_text += span.text
+            #
+            # for span in hang_kor:
+            #     hang_kor_text += span.text
+
+            hang_eng_text_list.append(hang_eng_text.strip())
+            hang_kor_text_list.append(hang_kor_text.strip())
+
+        # 출력
         print("=" * 50)
-        print(text_eng.replace("\n", "\t"))
-        print(text_kor.replace("\n", "\t"))
+        print(article_title_eng.text.strip())
+        print(article_title_kor.text.strip())
+        print("#" * 30)
+
+        for i in range(len(hang_eng_text_list)):
+            print(hang_eng_text_list[i])
+            print(hang_kor_text_list[i])
+
+        pass
 
     print("a")
 

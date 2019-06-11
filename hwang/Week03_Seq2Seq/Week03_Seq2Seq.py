@@ -3,6 +3,7 @@ import time
 import sys
 import csv
 import copy
+import random
 
 # Third-party packages
 import numpy as np
@@ -83,7 +84,7 @@ if __name__ == "__main__":
     print(trainMorphData[0])
     print()
 
-    # trainMorphData = trainMorphData[:10020]
+    trainMorphData = trainMorphData[:500]
 
     trainAnsData = get_data_from_tsv(train_ans_file_path)
     trainAnsData = [int(ans) for ans in trainAnsData]
@@ -93,16 +94,9 @@ if __name__ == "__main__":
     print(trainAnsData[0])
     print()
 
-    # load gensim model
-    gensim_model = Word2Vec.load(w2v_gensim_model_file_path)
-    morphs = gensim_model.wv.index2word  # list of str
-    morphToIndex = dict()
-    for i, word in enumerate(morphs):
-        morphToIndex[word] = i
-
     # hyper parameters
     seqLen = 10
-    numBatchTrain = 100
+    numBatchTrain = 2000
     vecInputDim = None
     vecOutputDim = None
     numHidden = 256
@@ -110,12 +104,25 @@ if __name__ == "__main__":
     learningRate = 1e-3
     numEpochTrain = 5
 
+    morphs = list()
     startSeq = ["<BOS-{}>".format(i) for i in range(seqLen-1)]
     startSeq.reverse()
     morphs.extend(startSeq)
 
+    # load gensim model
+    gensim_model = Word2Vec.load(w2v_gensim_model_file_path)
+    morphs.extend(gensim_model.wv.index2word)  # list of str
+
     endMark = "<EOS>"
     morphs.append(endMark)
+
+    morphToIndex = dict()
+    for i, word in enumerate(morphs):
+        morphToIndex[word] = i
+
+    firstMorphIndex = 0
+    lastMorphIndex = len(morphs)-1
+
 
     morphToIndex = dict()
     for i, morph in enumerate(morphs):
@@ -175,7 +182,8 @@ if __name__ == "__main__":
 
     ## input, output
     x = tf.placeholder(tf.float32, [None, seqLen, vecInputDim])
-    y = tf.placeholder(tf.float32, [None, seqLen, vecOutputDim])
+    # y = tf.placeholder(tf.float32, [None, seqLen, vecOutputDim])
+    y = tf.placeholder(tf.float32, [None, vecOutputDim])
 
     ## RNN
     # cells = [tf.nn.rnn_cell.LSTMCell(numHidden) for _ in range(numStack)]
@@ -196,11 +204,20 @@ if __name__ == "__main__":
 
     logit = tf.matmul(outputsRnn, W) + b
 
-    yLast = tf.transpose(y, [1, 0, 2])[-1]
+    # yLast = tf.transpose(y, [1, 0, 2])[-1]
 
     ## Get cost and define optimizer
-    cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=logit, labels=yLast))
+    # cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=logit, labels=yLast))
+    cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=logit, labels=y))
     optimizer = tf.train.AdamOptimizer(learningRate).minimize(cost)
+
+    ## Evaluation
+    correct_prediction = tf.equal(tf.argmax(logit, 1), tf.argmax(y, 1))
+    num_correct_pred = tf.reduce_sum(tf.cast(correct_prediction, "float"))
+
+    ## inference
+    inference = tf.argmax(logit, 1)
+
 
 
     print("Graph is drawn and session starts")
@@ -215,17 +232,60 @@ if __name__ == "__main__":
         batchIndexesX, batchIndexesY = train_batch_generator.next_batch()
         batchX = batchIndexesToInputOneHots(batchIndexesX, numMorph)
         batchY = batchIndexesToOutputOneHots(batchIndexesY, numMorph)
+        batchYLast = np.transpose(batchY, [1, 0, 2])[-1]
         _, cost_batch = sess.run([optimizer, cost],
-                                 feed_dict={x: batchX, y: batchY})
+                                 feed_dict={x: batchX, y: batchYLast})
         cost_epoch += cost_batch
-        if True:
-        # if train_batch_generator.get_epoch_end():
+        # if True:
+        if not train_batch_generator.get_epoch_end():
+            sys.stdout.write("\r" + 'Epoch: %02d - ' % (train_batch_generator.get_epoch()) +
+                             "step [%d/%d]" % (train_batch_generator.cursor, train_batch_generator.data_size))
+        else:
+            sys.stdout.write("\n")
             print('Epoch:', '%02d' % (train_batch_generator.get_epoch()),
                   '  cost =', '{:.10f}'.format(cost_epoch / len(trainMorphData)),
                   "(%d secs)" % ((int)(time.time() - time_start)))
             cost_epoch = 0
 
+            randomPositiveSentIndex = -1
+            while randomPositiveSentIndex < 0:
+                randomPositiveSentIndex = random.randrange(0, len(trainSentIndexNAnsInputRnn))
+                if trainSentIndexNAnsInputRnn[randomPositiveSentIndex][0][0] != 0:
+                    randomPositiveSentIndex = -1
+                if trainSentIndexNAnsInputRnn[randomPositiveSentIndex][1] != 1:
+                    randomPositiveSentIndex = -1
+
+            randomNegativeSentIndex = -1
+            while randomNegativeSentIndex < 0:
+                randomNegativeSentIndex = random.randrange(0, len(trainSentIndexNAnsInputRnn))
+                if trainSentIndexNAnsInputRnn[randomNegativeSentIndex][0][0] != 0:
+                    randomNegativeSentIndex = -1
+                if trainSentIndexNAnsInputRnn[randomNegativeSentIndex][1] != 0:
+                    randomNegativeSentIndex = -1
+
+            positiveInferInputIndexList = [trainSentIndexNAnsInputRnn[randomPositiveSentIndex]] ##  수정해 야한다. tuple and int 다
+            negativeInferInputIndexList = [trainSentIndexNAnsInputRnn[randomNegativeSentIndex]]
+
+            positiveOneX = batchIndexesToInputOneHots(positiveInferInputIndexList, numMorph)
+            negativeOneX = batchIndexesToInputOneHots(negativeInferInputIndexList, numMorph)
+
+            positiveInfer = sess.run(inference, feed_dict={x: positiveOneX})
+            # positiveInfer = tf.cast(positiveInfer[0], "int")
+            negativeInfer = sess.run(inference, feed_dict={x: negativeOneX})
+            # negativeInfer = tf.cast(negativeInfer[0], "int")
+
+            sys.stdout.write("Positive - ")
+            for idx in trainSentIndexNAnsInputRnn[randomPositiveSentIndex][0]:
+                sys.stdout.write(morphs[idx] + " ")
+            sys.stdout.write(morphs[int(positiveInfer)] + "\n")
+
+            sys.stdout.write("Negative - ")
+            for idx in trainSentIndexNAnsInputRnn[randomNegativeSentIndex][0]:
+                sys.stdout.write(morphs[idx] + " ")
+            sys.stdout.write(morphs[int(negativeInfer)] + "\n")
+
     print("Training End")
+
 
 
 

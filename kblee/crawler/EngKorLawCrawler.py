@@ -9,6 +9,8 @@ main_url = "https://elaw.klri.re.kr"
 initial_hseq = 1
 
 for hseq in range(initial_hseq, 50000):
+    print("~~~~~ hseq = %s" % hseq)
+
     url = main_url + "/kor_service/lawView.do?hseq=%s&lang=KOR" % hseq
     driver1.get(url)
 
@@ -76,31 +78,25 @@ for hseq in range(initial_hseq, 50000):
         hang_kor_text_list = []
 
         for i in range(min(len(hang_eng), len(hang_kor))):
-            hang_eng_text = ""
-            hang_kor_text = ""
+            hang_eng_text = hang_eng[i].text
+            hang_kor_text = hang_kor[i].text
 
-            # 조항의 숫자 빼고 내용만 얻기
-            for j in range(len(hang_eng[i])):
-                hang_cont_eng = hang_eng[i].contents[j].find("span")
-
-                if hang_cont_eng:
-                    hang_eng_text += hang_cont_eng.text
-                else:
-                    hang_eng_text += hang_eng[i].contents[j].text
-
-            for j in range(len(hang_kor[i])):
-                hang_cont_kor = hang_kor[i].contents[j].find("span")
-
-                if hang_cont_kor:
-                    hang_kor_text += hang_cont_kor.text
-                else:
-                    hang_kor_text += hang_kor[i].contents[j].text
-
-            # for span in hang_eng:
-            #     hang_eng_text += span.text
+            # # 조항의 숫자 빼고 내용만 얻기
+            # for j in range(len(hang_eng[i])):
+            #     hang_cont_eng = hang_eng[i].contents[j].find("span")
             #
-            # for span in hang_kor:
-            #     hang_kor_text += span.text
+            #     if hang_cont_eng:
+            #         hang_eng_text += hang_cont_eng.text
+            #     else:
+            #         hang_eng_text += hang_eng[i].contents[j].text
+            #
+            # for j in range(len(hang_kor[i])):
+            #     hang_cont_kor = hang_kor[i].contents[j].find("span")
+            #
+            #     if hang_cont_kor:
+            #         hang_kor_text += hang_cont_kor.text
+            #     else:
+            #         hang_kor_text += hang_kor[i].contents[j].text
 
             hang_eng_text_list.append(hang_eng_text.strip())
             hang_kor_text_list.append(hang_kor_text.strip())

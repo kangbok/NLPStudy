@@ -6,6 +6,8 @@ driver1 = webdriver.Chrome("E:/Tools/chromeDriver/chromedriver.exe")
 driver2 = webdriver.Chrome("E:/Tools/chromeDriver/chromedriver.exe")
 main_url = "https://elaw.klri.re.kr"
 
+out_list = [] # 결과 저장 리스트
+previous_law_title = "" # 직전에 성공한 법의 제목
 initial_hseq = 1
 
 for hseq in range(initial_hseq, 50000):
@@ -19,8 +21,11 @@ for hseq in range(initial_hseq, 50000):
     soup = BeautifulSoup(source, "html.parser")
 
     # 현재 url에서 접근 가능한 iframe까지 접근. 여기서 src값 얻기.
-    iframe_str = str(soup.find("iframe", {"id": "lawViewContent"}))
-    iframe_src_url = iframe_str.split('src="')[1].split('"')[0]
+    try:
+        iframe_str = str(soup.find("iframe", {"id": "lawViewContent"}))
+        iframe_src_url = iframe_str.split('src="')[1].split('"')[0]
+    except Exception as e:
+        continue
 
     # 실제 사용할 url 코드 얻기
     wanted_url = main_url + iframe_src_url
@@ -35,6 +40,12 @@ for hseq in range(initial_hseq, 50000):
     if not wanted_area:
         continue
 
+    # 법 제목으로 이미 크롤링 성공했던 것은 다시 하지 않기
+    current_law_title = wanted_area.contents[1].contents[3].text.strip().split("\n")[0]
+
+    if previous_law_title == current_law_title:
+        continue
+
     tr_list = wanted_area.contents[1].contents[3].contents
 
     # tr_list가 4개라는 것은 내용이 없다는 뜻
@@ -46,8 +57,11 @@ for hseq in range(initial_hseq, 50000):
             continue
 
         # 조 단위로 묶인 내용
-        td_eng = tr.contents[1]
-        td_kor = tr.contents[3]
+        try:
+            td_eng = tr.contents[1]
+            td_kor = tr.contents[3]
+        except IndexError as e:
+            continue
 
         # 내용 없으면 continue
         if not td_eng.text.strip() or not td_kor.text.strip():
@@ -102,16 +116,19 @@ for hseq in range(initial_hseq, 50000):
             hang_kor_text_list.append(hang_kor_text.strip())
 
         # 출력
-        print("=" * 50)
-        print(article_title_eng.text.strip())
-        print(article_title_kor.text.strip())
-        print("#" * 30)
+        # print("=" * 50)
+        # print(article_title_eng.text.strip())
+        # print(article_title_kor.text.strip())
+        # print("#" * 30)
 
         for i in range(len(hang_eng_text_list)):
-            print(hang_eng_text_list[i])
-            print(hang_kor_text_list[i])
+            # print(hang_eng_text_list[i])
+            # print(hang_kor_text_list[i])
 
-        pass
+            with open("datasource/raw_text.txt", "a") as f:
+                f.write(hang_kor_text_list[i].replace("\t", " ") + "\t" + hang_eng_text_list[i].replace("\t", " ") + "\n")
 
-    print("a")
+    previous_law_title = current_law_title
+
+    # print("a")
 

@@ -14,6 +14,9 @@ def create_vocab_dict(dataset_file_path, vocab_idx_path, idx_vocab_path, mode="e
         for text in dataset:
             eojeol_list = text.split(" ")
             target_list.extend(eojeol_list)
+    else:
+        for word_list in dataset:
+            target_list.extend(word_list)
 
     all_list = list(set(target_list))
     all_list.sort()
@@ -31,6 +34,6 @@ def create_vocab_dict(dataset_file_path, vocab_idx_path, idx_vocab_path, mode="e
         pickle.dump(idx_vocab_dict, f)
 
 
-create_vocab_dict("../dataset/eojeol_kor.pkl", "../resource/vocab_idx_eojeol_kor.pkl", "../resource/idx_vocab_eojeol_kor.pkl", "eojeol")
-create_vocab_dict("../dataset/eojeol_eng.pkl", "../resource/vocab_idx_eojeol_eng.pkl", "../resource/idx_vocab_eojeol_eng.pkl", "eojeol")
+# create_vocab_dict("../dataset/dataset_word_kor.pkl", "../resource/vocab_idx_word_kor.pkl", "../resource/idx_vocab_word_kor.pkl", "word")
+create_vocab_dict("../dataset/dataset_word_eng.pkl", "../resource/vocab_idx_word_eng.pkl", "../resource/idx_vocab_word_eng.pkl", "word")
 

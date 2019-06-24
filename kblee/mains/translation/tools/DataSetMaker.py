@@ -1,84 +1,70 @@
-import json
 import pickle
 
-from konlpy.tag import Komoran
 
+class DataSetMaker:
+    def __init__(self):
+        pass
 
-class DatasetMaker:
-    def __init__(self, file_path):
-        self.source_list = self.create_source_list(file_path)
-        self.tokenizer = Komoran()
+    def load_all_raw_data(self):
+        print("raw data loading...")
+        raw_data = []
 
-    def create_source_list(self, file_path):
-        source_json_dict = self.load_json(file_path)
+        # 40만개만 이용하기
+        for i in range(0, 500000, 100000):
+            file_path = "../../../crawler/dataset/translation_%s.pkl" % i
 
+            with open(file_path, "rb") as f:
+                dataset_part = pickle.load(f)
+                raw_data.extend(dataset_part)
+
+        print("raw data is loaded!")
+
+        return raw_data
+
+    def save_dataset(self, raw_data, save_dir_path):
+        print("dataset pickle files making...")
+
+        kor_data, eng_data = self.split_kor_eng(raw_data, True)
+
+        with open(save_dir_path + "/dataset_kor.pkl", "wb") as f:
+            pickle.dump(kor_data, f)
+        with open(save_dir_path + "/dataset_eng.pkl", "wb") as f:
+            pickle.dump(eng_data, f)
+
+        print("dataset pickle files is made!")
+
+    def split_kor_eng(self, raw_data, is_format_change=True):
+        print("kor-eng data splitting...")
+
+        cnt = 0
         kor_list = []
         eng_list = []
 
-        # title 처리
-        title_dict = source_json_dict["title"]
-        kor_list.append(title_dict["kor"])
-        eng_list.append(title_dict["eng"])
+        if is_format_change:
+            for kor_data, eng_data in raw_data:
+                kor_list.append(list(map(lambda x:"/".join(x), kor_data)))
+                eng_list.append(list(map(lambda x:"/".join(x), eng_data)))
 
-        # update_dates 처리
-        ud_dict = source_json_dict["update_dates"]
+                if cnt % 20000 == 0:
+                    print(cnt)
 
-        for kor_text in ud_dict["kor"]:
-            kor_list.append(kor_text)
-        for eng_text in ud_dict["eng"]:
-            eng_list.append(eng_text)
-
-        # articles 처리
-        for article in source_json_dict["articles"]:
-            for sub_article in article:
-                contents_dict = sub_article["contents"]
-
-                kor_list.append(contents_dict["kor"])
-                eng_list.append(contents_dict["eng"])
-
-        return list(zip(kor_list, eng_list))
-
-    def load_json(self, file_path):
-        with open(file_path, "r", encoding="utf-8") as f:
-            out_json = json.load(f)
-
-        return out_json
-
-    def save_dataset(self, save_dir_path, mode="word"):
-        if mode == "word":
-            kor_dataset, eng_dataset = self.make_word_set()
-        elif mode == "char":
-            kor_dataset, eng_dataset = self.make_char_set()
+                cnt += 1
         else:
-            kor_dataset, eng_dataset = self.make_eojeol_set()
+            for kor_data, eng_data in raw_data:
+                kor_list.append(kor_data)
+                eng_list.append(eng_data)
 
-        with open("%s/%s_kor.pkl" % (save_dir_path, mode), "wb") as f:
-            pickle.dump(kor_dataset, f)
+                if cnt % 20000 == 0:
+                    print(cnt)
 
-        with open("%s/%s_eng.pkl" % (save_dir_path, mode), "wb") as f:
-            pickle.dump(eng_dataset, f)
+                cnt += 1
 
+        "all kor-eng data is split!"
 
-    def make_word_set(self):
-        return [], []
-
-    def make_char_set(self):
-        return [], []
-
-    def make_eojeol_set(self):
-        kor_dataset = []
-        eng_dataset = []
-
-        for kor, eng in self.source_list:
-            kor_dataset.append(kor)
-            eng_dataset.append(eng)
-
-        return kor_dataset, eng_dataset
+        return kor_list, eng_list
 
 
 if __name__ == "__main__":
-    file_path = "../resource/HandMadeOneDocument.json"
-
-    dm = DatasetMaker(file_path)
-    dm.save_dataset("../dataset", "eojeol")
-
+    ds = DataSetMaker()
+    raw_data = ds.load_all_raw_data()
+    ds.save_dataset(raw_data, "../dataset")

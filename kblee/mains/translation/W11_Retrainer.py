@@ -138,6 +138,7 @@ with tf.Session() as sess:
                 is_start = True
 
             if not is_start:
+                cnt += 1
                 continue
 
             input_words = encoder_corpus[idx:idx + BATCH_SIZE]

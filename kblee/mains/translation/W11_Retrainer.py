@@ -130,9 +130,16 @@ with tf.Session() as sess:
 
     ################################################################################# 돌아가면서 학습 시작
     cnt = 0
+    is_start = False
 
     for epoch in range(EPOCH):
         for idx in range(0, len(encoder_corpus), BATCH_SIZE):
+            if cnt > 5800:
+                is_start = True
+
+            if not is_start:
+                continue
+
             input_words = encoder_corpus[idx:idx + BATCH_SIZE]
             output_words = decoder_corpus[idx:idx + BATCH_SIZE]
 

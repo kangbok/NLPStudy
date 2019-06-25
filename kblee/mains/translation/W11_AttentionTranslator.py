@@ -21,8 +21,8 @@ DECODER_VOCAB_SIZE = len(vocab_idx_eng_dict.keys())
 ENCODER_EMB_SIZE = 128
 DECODER_EMB_SIZE = 128
 RNN_UNITS = 256
-ENCODER_MAX_LENGTH = 610
-DECODER_MAX_LENGTH = 1285
+ENCODER_MAX_LENGTH = 300
+DECODER_MAX_LENGTH = 400
 ATTENTION_SIZE = 256
 LEARNING_RATE = 0.0001
 BATCH_SIZE = 30
@@ -38,7 +38,7 @@ real_decoder_length = tf.placeholder(tf.int32, [None, ], name="real_decoder_leng
 # 0.0: no sampling => `ScheduledEmbedidngTrainingHelper` is equivalent to `TrainingHelper`
 # 1.0: always sampling => `ScheduledEmbedidngTrainingHelper` is equivalent to `GreedyEmbeddingHelper`
 # Inceasing sampling over steps => Curriculum Learning
-sampling_probability = tf.placeholder(tf.float32, shape=[], name="sampling_probability")
+# sampling_probability = tf.placeholder(tf.float32, shape=[], name="sampling_probability")
 
 ##### encoder
 encoder_emb_w = tf.get_variable(name='enc_embedding', initializer=tf.random_uniform([ENCODER_VOCAB_SIZE, ENCODER_EMB_SIZE]), dtype=tf.float32)
@@ -58,12 +58,12 @@ output_layer = tf.layers.Dense(DECODER_VOCAB_SIZE, name='output_projection')
 ### training part
 training_max_length = tf.reduce_max(real_decoder_length + 1, name="decoder_max_length")
 dec_emb_inputs = tf.nn.embedding_lookup(decoder_emb_w, decoder_x, name='emb_inputs')
-# training_helper = contrib.seq2seq.TrainingHelper(inputs=dec_emb_inputs, sequence_length=real_decoder_length + 1, name="training_helper")
-training_helper = contrib.seq2seq.ScheduledEmbeddingTrainingHelper(inputs=dec_emb_inputs,
-                                                                   sequence_length=real_decoder_length + 1,
-                                                                   embedding=decoder_emb_w,
-                                                                   sampling_probability=sampling_probability,
-                                                                   name="training_helper")
+training_helper = contrib.seq2seq.TrainingHelper(inputs=dec_emb_inputs, sequence_length=real_decoder_length + 1, name="training_helper")
+# training_helper = contrib.seq2seq.ScheduledEmbeddingTrainingHelper(inputs=dec_emb_inputs,
+#                                                                    sequence_length=real_decoder_length + 1,
+#                                                                    embedding=decoder_emb_w,
+#                                                                    sampling_probability=sampling_probability,
+#                                                                    name="training_helper")
 training_decoder = contrib.seq2seq.BasicDecoder(decoder_cell, training_helper, initial_state, output_layer)
 
 decoder_train_output, decoder_state_train, decoder_train_output_length = \
@@ -99,7 +99,10 @@ def create_encoder_input(stc_list, batch_size):
     for word_list in stc_list:
         one_encoder_list = []
 
-        for word in word_list:
+        for idx, word in enumerate(word_list):
+            if idx >= ENCODER_MAX_LENGTH - 2:
+                break
+
             one_encoder_list.append(vocab_idx_kor_dict[word])
 
         one_encoder_list = np.asarray(one_encoder_list, dtype="int32")
@@ -108,12 +111,15 @@ def create_encoder_input(stc_list, batch_size):
             one_encoder_list = np.append(one_encoder_list, 2)  # 2의 의미 : <P> 토큰
 
         out_idx_list.append(one_encoder_list)
-        out_encoder_size.append(len(word_list))
+        out_encoder_size.append(min(len(word_list), ENCODER_MAX_LENGTH - 1))
 
     out_idx_list = np.asarray(out_idx_list, dtype=np.int)
     out_idx_list = out_idx_list.reshape([batch_size, -1])
 
-    out_encoder_size = np.asarray(out_encoder_size, dtype=np.int).reshape((batch_size,))
+    try:
+        out_encoder_size = np.asarray(out_encoder_size, dtype=np.int).reshape((batch_size,))
+    except ValueError as e:
+        return None, None
 
     return out_idx_list, out_encoder_size
 
@@ -125,7 +131,10 @@ def create_decoder_input(stc_list, batch_size):
     for word_list in stc_list:
         one_decoder_list = [0] # 0의 의미 : <S> 토큰
 
-        for word in word_list:
+        for idx, word in enumerate(word_list):
+            if idx >= DECODER_MAX_LENGTH - 2:
+                break
+
             one_decoder_list.append(vocab_idx_eng_dict[word])
 
         one_decoder_list = np.asarray(one_decoder_list, dtype=np.int)
@@ -134,7 +143,7 @@ def create_decoder_input(stc_list, batch_size):
             one_decoder_list = np.append(one_decoder_list, 1)  # 1의 의미 : <E> 토큰
 
         out_idx_list.append(one_decoder_list)
-        out_decoder_size.append(len(word_list))
+        out_decoder_size.append(min(len(word_list), DECODER_MAX_LENGTH - 1))
 
     out_idx_list = np.asarray(out_idx_list, dtype=np.int)
     out_idx_list = out_idx_list.reshape([batch_size, -1])
@@ -189,6 +198,10 @@ with tf.Session() as sess:
             output_words = decoder_corpus[idx:idx + BATCH_SIZE]
 
             encoder_x_, encoder_size_ = create_encoder_input(input_words, BATCH_SIZE)
+
+            if encoder_x_ is None or encoder_x_.shape[0] < 30:
+                continue
+
             decoder_x_, decoder_size_ = create_decoder_input(output_words, BATCH_SIZE)
 
             # 매 100개 batch마다 step print, 모델 저장
@@ -200,8 +213,13 @@ with tf.Session() as sess:
                 print_tmp_result(output_words[0], test_result)
                 saver.save(sess, checkpoint_path)
 
+            ### 그냥 TrainingHelper를 사용할 시
             sess.run(optimizer, feed_dict={encoder_x: encoder_x_, real_encoder_length: encoder_size_,
-                                           decoder_x: decoder_x_, real_decoder_length: decoder_size_,
-                                           sampling_probability: sampling_probability_list[epoch]})
+                                           decoder_x: decoder_x_, real_decoder_length: decoder_size_})
+
+            ### ScheduledEmbeddingTrainingHelper를 사용할 시
+            # sess.run(optimizer, feed_dict={encoder_x: encoder_x_, real_encoder_length: encoder_size_,
+            #                                decoder_x: decoder_x_, real_decoder_length: decoder_size_,
+            #                                sampling_probability: sampling_probability_list[epoch]})
 
             cnt += 1

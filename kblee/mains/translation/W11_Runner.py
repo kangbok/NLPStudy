@@ -25,14 +25,21 @@ with tf.Session() as sess:
     word_pos_list = komoran.pos(sentence)
     word_pos_list = ["/".join(t) for t in word_pos_list]
     input_x = list(map(lambda x:vocab_idx_dict[x], word_pos_list))
-    INPUT_LENGTH = 610
+    INPUT_LENGTH = 300
+    BATCH_SIZE = 30
 
     for _ in range(INPUT_LENGTH - len(input_x)):
         input_x.append(2)
 
-    input_x = np.asarray(input_x).reshape(1, -1)
+    for _ in range(BATCH_SIZE - 1):
+        for _ in range(INPUT_LENGTH):
+            input_x.append(0)
 
-    result = sess.run(predictions, feed_dict={encoder_x: input_x, encoder_length: [len(input_x)]})
+    input_x = np.asarray(input_x).reshape(BATCH_SIZE, -1)
+    input_length = [len(input_x)] * BATCH_SIZE
+
+    result = sess.run(predictions, feed_dict={encoder_x: input_x, encoder_length: input_length})
 
     for row in result:
         print(list(map(lambda x:idx_vocab_dict[x], row)))
+        break

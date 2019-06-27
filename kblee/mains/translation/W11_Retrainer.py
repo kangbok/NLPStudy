@@ -134,7 +134,7 @@ with tf.Session() as sess:
 
     for epoch in range(EPOCH):
         for idx in range(0, len(encoder_corpus), BATCH_SIZE):
-            if cnt > 48900:
+            if cnt > 73900:
                 is_start = True
 
             if not is_start:

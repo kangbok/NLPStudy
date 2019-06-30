@@ -25,8 +25,8 @@ with tf.Session() as sess:
     word_pos_list = komoran.pos(sentence)
     word_pos_list = ["/".join(t) for t in word_pos_list]
     input_x = list(map(lambda x:vocab_idx_dict[x], word_pos_list))
-    INPUT_LENGTH = 300
-    BATCH_SIZE = 30
+    INPUT_LENGTH = 150
+    BATCH_SIZE = 100
 
     for _ in range(INPUT_LENGTH - len(input_x)):
         input_x.append(2)

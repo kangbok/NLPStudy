@@ -9,13 +9,35 @@ class DataSetMaker:
         print("raw data loading...")
         raw_data = []
 
-        # 40만개만 이용하기
-        for i in range(0, 500000, 100000):
+        ### 40만개만 이용하기
+        # for i in range(0, 500000, 100000):
+        #     file_path = "../../../crawler/dataset/translation_%s.pkl" % i
+        #
+        #     with open(file_path, "rb") as f:
+        #         dataset_part = pickle.load(f)
+        #         raw_data.extend(dataset_part)
+
+        ### 영어 문장 길이 최대치 이하로 20만개만 이용하기
+        MAX_WORD_COUNT = 50 # 문장 길이 최대치
+        MAX_SENTENE_COUNT = 200000
+        is_finished = False
+
+        for i in range(0, 1300000, 100000):
             file_path = "../../../crawler/dataset/translation_%s.pkl" % i
 
             with open(file_path, "rb") as f:
                 dataset_part = pickle.load(f)
-                raw_data.extend(dataset_part)
+
+                for kor_data, eng_data in dataset_part:
+                    if len(eng_data) < MAX_WORD_COUNT:
+                        raw_data.append((kor_data, eng_data))
+
+                    if len(raw_data) >= MAX_SENTENE_COUNT:
+                        is_finished = True
+                        break
+
+            if is_finished:
+                break
 
         print("raw data is loaded!")
 

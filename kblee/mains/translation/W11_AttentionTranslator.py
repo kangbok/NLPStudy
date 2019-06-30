@@ -21,18 +21,20 @@ DECODER_VOCAB_SIZE = len(vocab_idx_eng_dict.keys())
 ENCODER_EMB_SIZE = 128
 DECODER_EMB_SIZE = 128
 RNN_UNITS = 256
-ENCODER_MAX_LENGTH = 300
-DECODER_MAX_LENGTH = 400
+ENCODER_MAX_LENGTH = 150
+DECODER_MAX_LENGTH = 50
 ATTENTION_SIZE = 256
-LEARNING_RATE = 0.0001
-BATCH_SIZE = 30
+# LEARNING_RATE = 0.0001
+BATCH_SIZE = 100
 
 
 ##### place holders
 encoder_x = tf.placeholder(tf.int32, [None, ENCODER_MAX_LENGTH], name="encoder_x")
 decoder_x = tf.placeholder(tf.int32, [None, DECODER_MAX_LENGTH], name="decoder_x")
+decoder_y = tf.placeholder(tf.int32, [None, DECODER_MAX_LENGTH], name="decoder_y")
 real_encoder_length = tf.placeholder(tf.int32, [None, ], name="real_encoder_length")
 real_decoder_length = tf.placeholder(tf.int32, [None, ], name="real_decoder_length")
+learning_rate = tf.placeholder(tf.int32, None, name="learning_rate")
 
 # 0.0 ≤ sampling_probability ≤ 1.0
 # 0.0: no sampling => `ScheduledEmbedidngTrainingHelper` is equivalent to `TrainingHelper`
@@ -70,10 +72,10 @@ decoder_train_output, decoder_state_train, decoder_train_output_length = \
     contrib.seq2seq.dynamic_decode(decoder=training_decoder, maximum_iterations=training_max_length, impute_finished=True)
 
 decoder_train_logits = tf.identity(decoder_train_output.rnn_output, name="decoder_logits_train")
-targets = tf.slice(decoder_x, [0, 0], [-1, training_max_length], name="targets")
+targets = tf.slice(decoder_y, [0, 0], [-1, training_max_length], name="targets")
 mask = tf.sequence_mask(real_decoder_length + 1, training_max_length, tf.float32, name="mask")
 batch_loss = contrib.seq2seq.sequence_loss(logits=decoder_train_logits, targets=targets, weights=mask, name="loss")
-optimizer = tf.train.AdamOptimizer(LEARNING_RATE).minimize(batch_loss)
+optimizer = tf.train.AdamOptimizer(learning_rate).minimize(batch_loss)
 valid_predictions = tf.identity(decoder_train_output.sample_id, name='valid_preds')
 
 ### inference part
@@ -125,32 +127,42 @@ def create_encoder_input(stc_list, batch_size):
 
 
 def create_decoder_input(stc_list, batch_size):
-    out_idx_list = []
+    out_x_idx_list = []
+    out_y_idx_list = []
     out_decoder_size = []
 
     for word_list in stc_list:
-        one_decoder_list = [0] # 0의 의미 : <S> 토큰
+        one_decoder_x_list = [0] # 0의 의미 : <S> 토큰
+        one_decoder_y_list = []
 
         for idx, word in enumerate(word_list):
             if idx >= DECODER_MAX_LENGTH - 2:
                 break
 
-            one_decoder_list.append(vocab_idx_eng_dict[word])
+            one_decoder_x_list.append(vocab_idx_eng_dict[word])
+            one_decoder_y_list.append(vocab_idx_eng_dict[word])
 
-        one_decoder_list = np.asarray(one_decoder_list, dtype=np.int)
+        one_decoder_x_list = np.asarray(one_decoder_x_list, dtype=np.int)
+        one_decoder_y_list = np.asarray(one_decoder_y_list, dtype=np.int)
 
-        for _ in range(DECODER_MAX_LENGTH - len(one_decoder_list)):
-            one_decoder_list = np.append(one_decoder_list, 1)  # 1의 의미 : <E> 토큰
+        for _ in range(DECODER_MAX_LENGTH - len(one_decoder_x_list)):
+            one_decoder_x_list = np.append(one_decoder_x_list, 1)  # 1의 의미 : <E> 토큰
+        for _ in range(DECODER_MAX_LENGTH - len(one_decoder_y_list)):
+            one_decoder_y_list = np.append(one_decoder_y_list, 1)  # 1의 의미 : <E> 토큰
 
-        out_idx_list.append(one_decoder_list)
+
+        out_x_idx_list.append(one_decoder_x_list)
+        out_y_idx_list.append(one_decoder_y_list)
         out_decoder_size.append(min(len(word_list), DECODER_MAX_LENGTH - 1))
 
-    out_idx_list = np.asarray(out_idx_list, dtype=np.int)
-    out_idx_list = out_idx_list.reshape([batch_size, -1])
+    out_x_idx_list = np.asarray(out_x_idx_list, dtype=np.int)
+    out_x_idx_list = out_x_idx_list.reshape([batch_size, -1])
+    out_y_idx_list = np.asarray(out_y_idx_list, dtype=np.int)
+    out_y_idx_list = out_y_idx_list.reshape([batch_size, -1])
 
     out_decoder_size = np.asarray(out_decoder_size, dtype=np.int).reshape((batch_size, ))
 
-    return out_idx_list, out_decoder_size
+    return out_x_idx_list, out_y_idx_list, out_decoder_size
 
 ################################################################################# 모델 저장
 saver = tf.train.Saver()
@@ -185,7 +197,8 @@ def print_tmp_result(original_answer, predicted_result):
 # decoder_xx = decoder_corpus
 
 EPOCH = 1000
-sampling_probability_list = np.linspace(start=0.0, stop=1.0, num=EPOCH, dtype=np.float32)
+LEARNING_RATE = 0.001
+# sampling_probability_list = np.linspace(start=0.0, stop=1.0, num=EPOCH, dtype=np.float32)
 
 with tf.Session() as sess:
     sess.run(tf.global_variables_initializer())
@@ -199,10 +212,10 @@ with tf.Session() as sess:
 
             encoder_x_, encoder_size_ = create_encoder_input(input_words, BATCH_SIZE)
 
-            if encoder_x_ is None or encoder_x_.shape[0] < 30:
+            if encoder_x_ is None or encoder_x_.shape[0] < 100:
                 continue
 
-            decoder_x_, decoder_size_ = create_decoder_input(output_words, BATCH_SIZE)
+            decoder_x_, decoder_y_, decoder_size_ = create_decoder_input(output_words, BATCH_SIZE)
 
             # 매 100개 batch마다 step print, 모델 저장
             if cnt % 100 == 0:
@@ -210,12 +223,13 @@ with tf.Session() as sess:
                 print("step %s" % cnt)
                 print(input_words[0])
                 print(output_words[0])
-                print_tmp_result(output_words[0], test_result)
+                print_tmp_result(output_words[0], test_result[0])
                 saver.save(sess, checkpoint_path)
 
             ### 그냥 TrainingHelper를 사용할 시
             sess.run(optimizer, feed_dict={encoder_x: encoder_x_, real_encoder_length: encoder_size_,
-                                           decoder_x: decoder_x_, real_decoder_length: decoder_size_})
+                                           decoder_x: decoder_x_, real_decoder_length: decoder_size_,
+                                           decoder_y: decoder_y_, learning_rate: LEARNING_RATE})
 
             ### ScheduledEmbeddingTrainingHelper를 사용할 시
             # sess.run(optimizer, feed_dict={encoder_x: encoder_x_, real_encoder_length: encoder_size_,

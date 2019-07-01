@@ -34,7 +34,7 @@ decoder_x = tf.placeholder(tf.int32, [None, DECODER_MAX_LENGTH], name="decoder_x
 decoder_y = tf.placeholder(tf.int32, [None, DECODER_MAX_LENGTH], name="decoder_y")
 real_encoder_length = tf.placeholder(tf.int32, [None, ], name="real_encoder_length")
 real_decoder_length = tf.placeholder(tf.int32, [None, ], name="real_decoder_length")
-learning_rate = tf.placeholder(tf.int32, None, name="learning_rate")
+learning_rate = tf.placeholder(tf.float32, None, name="learning_rate")
 
 # 0.0 ≤ sampling_probability ≤ 1.0
 # 0.0: no sampling => `ScheduledEmbedidngTrainingHelper` is equivalent to `TrainingHelper`
@@ -74,7 +74,7 @@ decoder_train_output, decoder_state_train, decoder_train_output_length = \
 decoder_train_logits = tf.identity(decoder_train_output.rnn_output, name="decoder_logits_train")
 targets = tf.slice(decoder_y, [0, 0], [-1, training_max_length], name="targets")
 mask = tf.sequence_mask(real_decoder_length + 1, training_max_length, tf.float32, name="mask")
-batch_loss = contrib.seq2seq.sequence_loss(logits=decoder_train_logits, targets=targets, weights=mask, name="loss")
+batch_loss = contrib.seq2seq.sequence_loss(logits=decoder_train_logits, targets=targets, weights=mask, name="batch_loss")
 optimizer = tf.train.AdamOptimizer(learning_rate).minimize(batch_loss)
 valid_predictions = tf.identity(decoder_train_output.sample_id, name='valid_preds')
 
@@ -174,10 +174,10 @@ ckpt = tf.train.get_checkpoint_state(SAVER_DIR)
 ################################################################################# 데이터 불러오기
 with open("dataset/dataset_word_kor.pkl", "rb") as f:
     encoder_corpus = pickle.load(f)
-    # encoder_corpus = list(map(lambda x:x.split(" "), encoder_corpus))
+    # encoder_corpus = encoder_corpus[100]
 with open("dataset/dataset_word_eng.pkl", "rb") as f:
     decoder_corpus = pickle.load(f)
-    # decoder_corpus = list(map(lambda x: x.split(" "), decoder_corpus))
+    # decoder_corpus = decoder_corpus[100]
 
 
 def print_tmp_result(original_answer, predicted_result):
@@ -212,15 +212,19 @@ with tf.Session() as sess:
 
             encoder_x_, encoder_size_ = create_encoder_input(input_words, BATCH_SIZE)
 
-            if encoder_x_ is None or encoder_x_.shape[0] < 100:
+            if encoder_x_ is None or encoder_x_.shape[0] < BATCH_SIZE:
                 continue
 
             decoder_x_, decoder_y_, decoder_size_ = create_decoder_input(output_words, BATCH_SIZE)
 
             # 매 100개 batch마다 step print, 모델 저장
             if cnt % 100 == 0:
+                loss = sess.run(batch_loss, feed_dict={encoder_x: encoder_x_, real_encoder_length: encoder_size_,
+                                                       decoder_x: decoder_x_, real_decoder_length: decoder_size_,
+                                                       decoder_y: decoder_y_})
                 test_result = sess.run(predictions, feed_dict={encoder_x: encoder_x_, real_encoder_length: encoder_size_})
-                print("step %s" % cnt)
+
+                print("step %s  /  loss %s" % (cnt, loss))
                 print(input_words[0])
                 print(output_words[0])
                 print_tmp_result(output_words[0], test_result[0])

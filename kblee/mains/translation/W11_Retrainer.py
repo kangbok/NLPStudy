@@ -125,6 +125,7 @@ with tf.Session() as sess:
     loader.restore(sess, tf.train.latest_checkpoint("model/"))
 
     graph = tf.get_default_graph()
+    batch_loss = graph.get_tensor_by_name("batch_loss/Sum:0")
     optimizer = graph.get_operation_by_name("Adam")
     predictions = graph.get_tensor_by_name("predictions:0")
     encoder_x = graph.get_tensor_by_name("encoder_x:0")
@@ -146,7 +147,7 @@ with tf.Session() as sess:
 
     for epoch in range(EPOCH):
         for idx in range(0, len(encoder_corpus), BATCH_SIZE):
-            if cnt > 500:
+            if cnt > 35300:
                 is_start = True
 
             if not is_start:
@@ -158,14 +159,19 @@ with tf.Session() as sess:
 
             encoder_x_, encoder_size_ = create_encoder_input(input_words, BATCH_SIZE)
 
-            if encoder_x_ is None or encoder_x_.shape[0] < 100:
+            if encoder_x_ is None or encoder_x_.shape[0] < BATCH_SIZE:
                 continue
 
             decoder_x_, decoder_y_, decoder_size_ = create_decoder_input(output_words, BATCH_SIZE)
 
             # 매 100개 batch마다 step print, 모델 저장
             if cnt % 100 == 0:
+                loss = sess.run(batch_loss, feed_dict={encoder_x: encoder_x_, real_encoder_length: encoder_size_,
+                                                       decoder_x: decoder_x_, real_decoder_length: decoder_size_,
+                                                       decoder_y: decoder_y_})
                 test_result = sess.run(predictions, feed_dict={encoder_x: encoder_x_, real_encoder_length: encoder_size_})
+
+                print("step %s  /  loss %s" % (cnt, loss))
                 print("step %s" % cnt)
                 print(input_words[0])
                 print(output_words[0])

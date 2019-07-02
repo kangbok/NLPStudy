@@ -118,7 +118,7 @@ def print_tmp_result(original_answer, predicted_result):
 
 ################################################################################# 실행
 EPOCH = 1000
-LEARNING_RATE = 0.001
+LEARNING_RATE = 0.0001
 
 with tf.Session() as sess:
     loader = tf.train.import_meta_graph("model/seq2seq_attention_translation.meta")
@@ -147,7 +147,7 @@ with tf.Session() as sess:
 
     for epoch in range(EPOCH):
         for idx in range(0, len(encoder_corpus), BATCH_SIZE):
-            if cnt > 35300:
+            if cnt > 37500:
                 is_start = True
 
             if not is_start:
@@ -172,7 +172,6 @@ with tf.Session() as sess:
                 test_result = sess.run(predictions, feed_dict={encoder_x: encoder_x_, real_encoder_length: encoder_size_})
 
                 print("step %s  /  loss %s" % (cnt, loss))
-                print("step %s" % cnt)
                 print(input_words[0])
                 print(output_words[0])
                 print_tmp_result(output_words[0], test_result[0])

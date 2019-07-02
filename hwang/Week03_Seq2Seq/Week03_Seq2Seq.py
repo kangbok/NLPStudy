@@ -4,6 +4,7 @@ import sys
 import csv
 import copy
 import random
+import os
 
 # Third-party packages
 import numpy as np
@@ -84,7 +85,7 @@ if __name__ == "__main__":
     print(trainMorphData[0])
     print()
 
-    trainMorphData = trainMorphData[:500]
+    # trainMorphData = trainMorphData[:500]
 
     trainAnsData = get_data_from_tsv(train_ans_file_path)
     trainAnsData = [int(ans) for ans in trainAnsData]
@@ -101,8 +102,8 @@ if __name__ == "__main__":
     vecOutputDim = None
     numHidden = 256
     numStack = 2
-    learningRate = 1e-3
-    numEpochTrain = 5
+    learningRate = 1e-4
+    numEpochTrain = 200
 
     morphs = list()
     startSeq = ["<BOS-{}>".format(i) for i in range(seqLen-1)]
@@ -181,44 +182,50 @@ if __name__ == "__main__":
     # Draw graph
 
     ## input, output
-    x = tf.placeholder(tf.float32, [None, seqLen, vecInputDim])
-    # y = tf.placeholder(tf.float32, [None, seqLen, vecOutputDim])
-    y = tf.placeholder(tf.float32, [None, vecOutputDim])
+    x = tf.placeholder(tf.float32, [None, seqLen, vecInputDim], name="x")
+    # y = tf.placeholder(tf.float32, [None, seqLen, vecOutputDim], name="x")
+    y = tf.placeholder(tf.float32, [None, vecOutputDim], name="y")
 
     ## RNN
     # cells = [tf.nn.rnn_cell.LSTMCell(numHidden) for _ in range(numStack)]
     # stackedCell = tf.nn.rnn_cell.MultiRNNCell(cells)
     # outputsRnn, statesRnn = tf.nn.dynamic_rnn(stackedCell, x, dtype=tf.float32)
 
-    outputsRnn, statesRnn = tf.nn.dynamic_rnn(tf.nn.rnn_cell.LSTMCell(numHidden), x, dtype=tf.float32)
+    cell = tf.nn.rnn_cell.LSTMCell(numHidden, name="lstmcell0")
+    outputsRnn, statesRnn = tf.nn.dynamic_rnn(cell, x, dtype=tf.float32)
 
     ## In each sentence, the hidden vector of the final step is only needed.
     ## (batch_size, n_step, n_hidden]) -> [n_step, batch_size, n_hidden]
     # outputsRnn = tf.transpose(outputsRnn, [1, 0, 2])
-    outputsRnn = tf.reshape(outputsRnn, [tf.shape(outputsRnn)[0], -1])
+    outputsRnn = tf.reshape(outputsRnn, [tf.shape(outputsRnn)[0], -1], name="reshaped_rnn_output")
     # lastOutputRnn = outputsRnn[-1]
 
     ## Full-connected layer
-    W = tf.Variable(tf.truncated_normal([numHidden*seqLen, vecOutputDim]))
-    b = tf.Variable(tf.truncated_normal([vecOutputDim]))
+    W = tf.Variable(tf.truncated_normal([numHidden*seqLen, vecOutputDim]), name="W0")
+    b = tf.Variable(tf.truncated_normal([vecOutputDim]), name="b0")
 
-    logit = tf.matmul(outputsRnn, W) + b
+    logit = tf.add(tf.matmul(outputsRnn, W), b, name="logit")
 
     # yLast = tf.transpose(y, [1, 0, 2])[-1]
 
     ## Get cost and define optimizer
     # cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=logit, labels=yLast))
-    cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=logit, labels=y))
+    cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=logit, labels=y), name="cost")
     optimizer = tf.train.AdamOptimizer(learningRate).minimize(cost)
 
     ## Evaluation
     correct_prediction = tf.equal(tf.argmax(logit, 1), tf.argmax(y, 1))
-    num_correct_pred = tf.reduce_sum(tf.cast(correct_prediction, "float"))
+    num_correct_pred = tf.reduce_sum(tf.cast(correct_prediction, "float"), name="num_correct")
 
     ## inference
-    inference = tf.argmax(logit, 1)
+    inference = tf.argmax(logit, 1, name="inference")
 
 
+    # Saver
+    saver = tf.train.Saver()
+    SAVER_DIR = "model"
+    # checkpoint_path = os.path.join(SAVER_DIR, "rnn_gen")
+    # ckpt = tf.train.get_checkpoint_state(SAVER_DIR)
 
     print("Graph is drawn and session starts")
 
@@ -236,13 +243,17 @@ if __name__ == "__main__":
         _, cost_batch = sess.run([optimizer, cost],
                                  feed_dict={x: batchX, y: batchYLast})
         cost_epoch += cost_batch
+
         # if True:
         if not train_batch_generator.get_epoch_end():
-            sys.stdout.write("\r" + 'Epoch: %02d - ' % (train_batch_generator.get_epoch()) +
+            sys.stdout.write("\r" + 'Epoch: %03d - ' % (train_batch_generator.get_epoch()) +
                              "step [%d/%d]" % (train_batch_generator.cursor, train_batch_generator.data_size))
         else:
+            save_path = os.path.join(SAVER_DIR, "rnn_gen_%03d" % train_batch_generator.get_epoch())
+            saver.save(sess, save_path)
+
             sys.stdout.write("\n")
-            print('Epoch:', '%02d' % (train_batch_generator.get_epoch()),
+            print('Epoch:', '%03d' % (train_batch_generator.get_epoch()),
                   '  cost =', '{:.10f}'.format(cost_epoch / len(trainMorphData)),
                   "(%d secs)" % ((int)(time.time() - time_start)))
             cost_epoch = 0
@@ -263,7 +274,7 @@ if __name__ == "__main__":
                 if trainSentIndexNAnsInputRnn[randomNegativeSentIndex][1] != 0:
                     randomNegativeSentIndex = -1
 
-            positiveInferInputIndexList = [trainSentIndexNAnsInputRnn[randomPositiveSentIndex]] ##  수정해 야한다. tuple and int 다
+            positiveInferInputIndexList = [trainSentIndexNAnsInputRnn[randomPositiveSentIndex]]
             negativeInferInputIndexList = [trainSentIndexNAnsInputRnn[randomNegativeSentIndex]]
 
             positiveOneX = batchIndexesToInputOneHots(positiveInferInputIndexList, numMorph)

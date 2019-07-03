@@ -77,104 +77,105 @@ def batchIndexesToOutputOneHots(bacthIndexes, num_morph):
     return np.array(seqOutputList)
 
 
+
+# load train data
+trainMorphData = get_data_from_pickle(train_morph_file_path)
+print(len(trainMorphData))
+print("See a Train Data Sample")
+print(trainMorphData[0])
+print()
+
+# trainMorphData = trainMorphData[:500]
+
+trainAnsData = get_data_from_tsv(train_ans_file_path)
+trainAnsData = [int(ans) for ans in trainAnsData]
+print(len(trainAnsData))
+print("See a Train Answer Sample")
+print(type(trainAnsData[0]))
+print(trainAnsData[0])
+print()
+
+# hyper parameters
+seqLen = 10
+numBatchTrain = 2000
+vecInputDim = None
+vecOutputDim = None
+numHidden = 256
+numStack = 2
+learningRate = 1e-4
+numEpochTrain = 20
+
+morphs = list()
+startSeq = ["<BOS-{}>".format(i) for i in range(seqLen-1)]
+startSeq.reverse()
+morphs.extend(startSeq)
+
+# load gensim model
+gensim_model = Word2Vec.load(w2v_gensim_model_file_path)
+morphs.extend(gensim_model.wv.index2word)  # list of str
+
+endMark = "<EOS>"
+morphs.append(endMark)
+
+morphToIndex = dict()
+for i, word in enumerate(morphs):
+    morphToIndex[word] = i
+
+firstMorphIndex = 0
+lastMorphIndex = len(morphs)-1
+
+
+morphToIndex = dict()
+for i, morph in enumerate(morphs):
+    morphToIndex[morph] = i
+
+print("Collecting frequent morphs ...")
+time_start = time.time()
+trainMorphDataIndex = list()
+for i, sentMorph in enumerate(trainMorphData):
+    augSentMorph = copy.deepcopy(startSeq)
+    augSentMorphIndex = list()
+    for start in startSeq:
+        augSentMorphIndex.append(morphToIndex[start])
+
+    for jMorph in sentMorph:
+        if jMorph in morphs:
+            augSentMorph.append(jMorph)
+            augSentMorphIndex.append(morphToIndex[jMorph])
+
+    augSentMorph.append(endMark)
+    augSentMorphIndex.append(morphToIndex[endMark])
+
+    trainMorphData[i] = augSentMorph
+    trainMorphDataIndex.append(augSentMorphIndex)
+
+    sys.stdout.write("\r[%d/%d] (%d secs)" %
+                     (i + 1, len(trainMorphData), (int)(time.time() - time_start)))
+
+sys.stdout.write("\n")
+
+trainSentIndexNAnsInputRnn = list()
+trainSentIndexOutputRnn = list()
+
+
+for aSentIndex, ans in zip(trainMorphDataIndex, trainAnsData):
+    for jPart in range(len(aSentIndex) - seqLen):
+        inputIndex = aSentIndex[jPart:jPart+seqLen]
+        trainSentIndexNAnsInputRnn.append((inputIndex, ans))
+        outputIndex = aSentIndex[jPart+1:jPart+seqLen+1]
+        trainSentIndexOutputRnn.append(outputIndex)
+        # print(len(outputIndex))
+
+print("trainSentIndexNAnsInputRnn length - %d" % len(trainSentIndexNAnsInputRnn))
+print("one of trainSentIndexNAnsInputRnn length - %d" % len(trainSentIndexNAnsInputRnn[0][0]))
+print("trainSentIndexOutputRnn length - %d" % len(trainSentIndexOutputRnn))
+print("one of trainSentIndexOutputRnn length - %d" % len(trainSentIndexOutputRnn[0]))
+
+numMorph = len(morphs)
+vecInputDim = numMorph + 1
+vecOutputDim = numMorph
+
 if __name__ == "__main__":
-    # load train data
-    trainMorphData = get_data_from_pickle(train_morph_file_path)
-    print(len(trainMorphData))
-    print("See a Train Data Sample")
-    print(trainMorphData[0])
-    print()
-
-    # trainMorphData = trainMorphData[:500]
-
-    trainAnsData = get_data_from_tsv(train_ans_file_path)
-    trainAnsData = [int(ans) for ans in trainAnsData]
-    print(len(trainAnsData))
-    print("See a Train Answer Sample")
-    print(type(trainAnsData[0]))
-    print(trainAnsData[0])
-    print()
-
-    # hyper parameters
-    seqLen = 10
-    numBatchTrain = 2000
-    vecInputDim = None
-    vecOutputDim = None
-    numHidden = 256
-    numStack = 2
-    learningRate = 1e-4
-    numEpochTrain = 200
-
-    morphs = list()
-    startSeq = ["<BOS-{}>".format(i) for i in range(seqLen-1)]
-    startSeq.reverse()
-    morphs.extend(startSeq)
-
-    # load gensim model
-    gensim_model = Word2Vec.load(w2v_gensim_model_file_path)
-    morphs.extend(gensim_model.wv.index2word)  # list of str
-
-    endMark = "<EOS>"
-    morphs.append(endMark)
-
-    morphToIndex = dict()
-    for i, word in enumerate(morphs):
-        morphToIndex[word] = i
-
-    firstMorphIndex = 0
-    lastMorphIndex = len(morphs)-1
-
-
-    morphToIndex = dict()
-    for i, morph in enumerate(morphs):
-        morphToIndex[morph] = i
-
-    print("Collecting frequent morphs ...")
-    time_start = time.time()
-    trainMorphDataIndex = list()
-    for i, sentMorph in enumerate(trainMorphData):
-        augSentMorph = copy.deepcopy(startSeq)
-        augSentMorphIndex = list()
-        for start in startSeq:
-            augSentMorphIndex.append(morphToIndex[start])
-
-        for jMorph in sentMorph:
-            if jMorph in morphs:
-                augSentMorph.append(jMorph)
-                augSentMorphIndex.append(morphToIndex[jMorph])
-
-        augSentMorph.append(endMark)
-        augSentMorphIndex.append(morphToIndex[endMark])
-
-        trainMorphData[i] = augSentMorph
-        trainMorphDataIndex.append(augSentMorphIndex)
-
-        sys.stdout.write("\r[%d/%d] (%d secs)" %
-                         (i + 1, len(trainMorphData), (int)(time.time() - time_start)))
-
-    sys.stdout.write("\n")
-
-    trainSentIndexNAnsInputRnn = list()
-    trainSentIndexOutputRnn = list()
-
-
-    for aSentIndex, ans in zip(trainMorphDataIndex, trainAnsData):
-        for jPart in range(len(aSentIndex) - seqLen):
-            inputIndex = aSentIndex[jPart:jPart+seqLen]
-            trainSentIndexNAnsInputRnn.append((inputIndex, ans))
-            outputIndex = aSentIndex[jPart+1:jPart+seqLen+1]
-            trainSentIndexOutputRnn.append(outputIndex)
-            # print(len(outputIndex))
-
-    print("trainSentIndexNAnsInputRnn length - %d" % len(trainSentIndexNAnsInputRnn))
-    print("one of trainSentIndexNAnsInputRnn length - %d" % len(trainSentIndexNAnsInputRnn[0][0]))
-    print("trainSentIndexOutputRnn length - %d" % len(trainSentIndexOutputRnn))
-    print("one of trainSentIndexOutputRnn length - %d" % len(trainSentIndexOutputRnn[0]))
-
-    numMorph = len(morphs)
-    vecInputDim = numMorph + 1
-    vecOutputDim = numMorph
-
     ## Construct batch generator
     train_batch_generator = BatchGenerator(trainSentIndexNAnsInputRnn, trainSentIndexOutputRnn, numBatchTrain)
     print("BatchGenerator is constructed.")
@@ -182,47 +183,47 @@ if __name__ == "__main__":
     # Draw graph
 
     ## input, output
-    x = tf.placeholder(tf.float32, [None, seqLen, vecInputDim], name="x")
+    x = tf.placeholder(tf.float32, [None, seqLen, vecInputDim], name="x:0")
     # y = tf.placeholder(tf.float32, [None, seqLen, vecOutputDim], name="x")
-    y = tf.placeholder(tf.float32, [None, vecOutputDim], name="y")
+    y = tf.placeholder(tf.float32, [None, vecOutputDim], name="y:0")
 
     ## RNN
     # cells = [tf.nn.rnn_cell.LSTMCell(numHidden) for _ in range(numStack)]
     # stackedCell = tf.nn.rnn_cell.MultiRNNCell(cells)
     # outputsRnn, statesRnn = tf.nn.dynamic_rnn(stackedCell, x, dtype=tf.float32)
 
-    cell = tf.nn.rnn_cell.LSTMCell(numHidden, name="lstmcell0")
+    cell = tf.nn.rnn_cell.LSTMCell(numHidden, name="lstmcell:0")
     outputsRnn, statesRnn = tf.nn.dynamic_rnn(cell, x, dtype=tf.float32)
 
     ## In each sentence, the hidden vector of the final step is only needed.
     ## (batch_size, n_step, n_hidden]) -> [n_step, batch_size, n_hidden]
     # outputsRnn = tf.transpose(outputsRnn, [1, 0, 2])
-    outputsRnn = tf.reshape(outputsRnn, [tf.shape(outputsRnn)[0], -1], name="reshaped_rnn_output")
+    outputsRnn = tf.reshape(outputsRnn, [tf.shape(outputsRnn)[0], -1], name="reshaped_rnn_output:0")
     # lastOutputRnn = outputsRnn[-1]
 
     ## Full-connected layer
-    W = tf.Variable(tf.truncated_normal([numHidden*seqLen, vecOutputDim]), name="W0")
-    b = tf.Variable(tf.truncated_normal([vecOutputDim]), name="b0")
+    W = tf.Variable(tf.truncated_normal([numHidden*seqLen, vecOutputDim]), name="W:0")
+    b = tf.Variable(tf.truncated_normal([vecOutputDim]), name="b:0")
 
-    logit = tf.add(tf.matmul(outputsRnn, W), b, name="logit")
+    logit = tf.add(tf.matmul(outputsRnn, W), b, name="logit:0")
 
     # yLast = tf.transpose(y, [1, 0, 2])[-1]
 
     ## Get cost and define optimizer
     # cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=logit, labels=yLast))
-    cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=logit, labels=y), name="cost")
+    cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=logit, labels=y), name="cost:0")
     optimizer = tf.train.AdamOptimizer(learningRate).minimize(cost)
 
     ## Evaluation
     correct_prediction = tf.equal(tf.argmax(logit, 1), tf.argmax(y, 1))
-    num_correct_pred = tf.reduce_sum(tf.cast(correct_prediction, "float"), name="num_correct")
+    num_correct_pred = tf.reduce_sum(tf.cast(correct_prediction, "float"), name="num_correct:0")
 
     ## inference
-    inference = tf.argmax(logit, 1, name="inference")
+    inference = tf.argmax(logit, 1, name="inference:0")
 
 
     # Saver
-    saver = tf.train.Saver()
+    saver = tf.train.Saver(max_to_keep=numEpochTrain)
     SAVER_DIR = "model"
     # checkpoint_path = os.path.join(SAVER_DIR, "rnn_gen")
     # ckpt = tf.train.get_checkpoint_state(SAVER_DIR)
@@ -246,15 +247,14 @@ if __name__ == "__main__":
 
         # if True:
         if not train_batch_generator.get_epoch_end():
-            sys.stdout.write("\r" + 'Epoch: %03d - ' % (train_batch_generator.get_epoch()) +
+            sys.stdout.write("\r" + 'Epoch: %03d - ' % (train_batch_generator.get_epoch() + 1) +
                              "step [%d/%d]" % (train_batch_generator.cursor, train_batch_generator.data_size))
         else:
             save_path = os.path.join(SAVER_DIR, "rnn_gen_%03d" % train_batch_generator.get_epoch())
             saver.save(sess, save_path)
 
             sys.stdout.write("\n")
-            print('Epoch:', '%03d' % (train_batch_generator.get_epoch()),
-                  '  cost =', '{:.10f}'.format(cost_epoch / len(trainMorphData)),
+            print('Train cost =', '{:.10f}'.format(cost_epoch / len(trainMorphData)),
                   "(%d secs)" % ((int)(time.time() - time_start)))
             cost_epoch = 0
 

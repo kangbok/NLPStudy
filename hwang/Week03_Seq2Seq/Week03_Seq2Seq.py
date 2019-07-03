@@ -183,43 +183,43 @@ if __name__ == "__main__":
     # Draw graph
 
     ## input, output
-    x = tf.placeholder(tf.float32, [None, seqLen, vecInputDim], name="x:0")
+    x = tf.placeholder(tf.float32, [None, seqLen, vecInputDim], name="x")
     # y = tf.placeholder(tf.float32, [None, seqLen, vecOutputDim], name="x")
-    y = tf.placeholder(tf.float32, [None, vecOutputDim], name="y:0")
+    y = tf.placeholder(tf.float32, [None, vecOutputDim], name="y")
 
     ## RNN
     # cells = [tf.nn.rnn_cell.LSTMCell(numHidden) for _ in range(numStack)]
     # stackedCell = tf.nn.rnn_cell.MultiRNNCell(cells)
     # outputsRnn, statesRnn = tf.nn.dynamic_rnn(stackedCell, x, dtype=tf.float32)
 
-    cell = tf.nn.rnn_cell.LSTMCell(numHidden, name="lstmcell:0")
+    cell = tf.nn.rnn_cell.LSTMCell(numHidden, name="lstmcell")
     outputsRnn, statesRnn = tf.nn.dynamic_rnn(cell, x, dtype=tf.float32)
 
     ## In each sentence, the hidden vector of the final step is only needed.
     ## (batch_size, n_step, n_hidden]) -> [n_step, batch_size, n_hidden]
     # outputsRnn = tf.transpose(outputsRnn, [1, 0, 2])
-    outputsRnn = tf.reshape(outputsRnn, [tf.shape(outputsRnn)[0], -1], name="reshaped_rnn_output:0")
+    outputsRnn = tf.reshape(outputsRnn, [tf.shape(outputsRnn)[0], -1], name="reshaped_rnn_output")
     # lastOutputRnn = outputsRnn[-1]
 
     ## Full-connected layer
-    W = tf.Variable(tf.truncated_normal([numHidden*seqLen, vecOutputDim]), name="W:0")
-    b = tf.Variable(tf.truncated_normal([vecOutputDim]), name="b:0")
+    W = tf.Variable(tf.truncated_normal([numHidden*seqLen, vecOutputDim]), name="W")
+    b = tf.Variable(tf.truncated_normal([vecOutputDim]), name="b")
 
-    logit = tf.add(tf.matmul(outputsRnn, W), b, name="logit:0")
+    logit = tf.add(tf.matmul(outputsRnn, W), b, name="logit")
 
     # yLast = tf.transpose(y, [1, 0, 2])[-1]
 
     ## Get cost and define optimizer
     # cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=logit, labels=yLast))
-    cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=logit, labels=y), name="cost:0")
+    cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=logit, labels=y), name="cost")
     optimizer = tf.train.AdamOptimizer(learningRate).minimize(cost)
 
     ## Evaluation
     correct_prediction = tf.equal(tf.argmax(logit, 1), tf.argmax(y, 1))
-    num_correct_pred = tf.reduce_sum(tf.cast(correct_prediction, "float"), name="num_correct:0")
+    num_correct_pred = tf.reduce_sum(tf.cast(correct_prediction, "float"), name="num_correct")
 
     ## inference
-    inference = tf.argmax(logit, 1, name="inference:0")
+    inference = tf.argmax(logit, 1, name="inference")
 
 
     # Saver

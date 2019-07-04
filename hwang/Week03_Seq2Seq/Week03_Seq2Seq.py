@@ -250,7 +250,7 @@ if __name__ == "__main__":
             sys.stdout.write("\r" + 'Epoch: %03d - ' % (train_batch_generator.get_epoch() + 1) +
                              "step [%d/%d]" % (train_batch_generator.cursor, train_batch_generator.data_size))
         else:
-            save_path = os.path.join(SAVER_DIR, "rnn_gen")
+            save_path = os.path.join(SAVER_DIR, "rnn_gen_%3d" % (train_batch_generator.get_epoch() + 1))
             saver.save(sess, save_path)
 
             sys.stdout.write("\n")

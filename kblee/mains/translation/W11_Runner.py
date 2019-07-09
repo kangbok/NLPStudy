@@ -21,12 +21,13 @@ with tf.Session() as sess:
     encoder_x = graph.get_tensor_by_name("encoder_x:0")
     encoder_length = graph.get_tensor_by_name("real_encoder_length:0")
 
-    sentence = "배타적 경제수역법"
+    sentence = "대한민국은 민주공화국이다."
     word_pos_list = komoran.pos(sentence)
     word_pos_list = ["/".join(t) for t in word_pos_list]
     input_x = list(map(lambda x:vocab_idx_dict[x], word_pos_list))
     INPUT_LENGTH = 150
     BATCH_SIZE = 100
+    input_length = [len(input_x)] * BATCH_SIZE
 
     for _ in range(INPUT_LENGTH - len(input_x)):
         input_x.append(2)
@@ -36,8 +37,6 @@ with tf.Session() as sess:
             input_x.append(0)
 
     input_x = np.asarray(input_x).reshape(BATCH_SIZE, -1)
-    input_length = [len(input_x)] * BATCH_SIZE
-
     result = sess.run(predictions, feed_dict={encoder_x: input_x, encoder_length: input_length})
 
     for row in result:

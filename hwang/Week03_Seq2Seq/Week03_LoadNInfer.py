@@ -2,16 +2,11 @@ import sys
 import random
 from argparse import ArgumentParser
 
-import numpy as np
 import tensorflow as tf
 
-from Week03_Seq2Seq import train_morph_file_path, \
-    w2v_gensim_model_file_path
-
 from Week03_Seq2Seq import trainSentIndexNAnsInputRnn, morphs, numMorph, seqLen
+from Week03_Seq2Seq import batchIndexesToInputOneHots
 
-from Week03_Seq2Seq import indexesToInputOneHots, batchIndexesToInputOneHots
-from Week03_Seq2Seq import indexesToOutputOneHots, batchIndexesToOutputOneHots
 
 def inferOne(tf_sess, tf_inference, morphIndexes, ans, numMorph):
     indexesNAnsList = [(morphIndexes, ans)]
@@ -22,19 +17,19 @@ def inferOne(tf_sess, tf_inference, morphIndexes, ans, numMorph):
 
 
 def pickRandomSentIndexToStart(ans):
-
-
-def inferSeq(tf_sess, tf_inference, ans, numMorph):
     randomSentIndex = -1
     while randomSentIndex < 0:
         randomSentIndex = random.randrange(0, len(trainSentIndexNAnsInputRnn))
-        if trainSentIndexNAnsInputRnn[randomSentIndex][0][0] != 0: # <BOS-8>
+        if trainSentIndexNAnsInputRnn[randomSentIndex][0][0] != 0:  # <BOS-8>
             randomSentIndex = -1
         if trainSentIndexNAnsInputRnn[randomSentIndex][1] != ans:
             randomSentIndex = -1
 
-    randomSentIndex = pickRandomSentIndexToStart(ans)
-    totalSeq = trainSentIndexNAnsInputRnn[randomSentIndex][0]
+    return randomSentIndex
+
+
+def inferSeq(tf_sess, tf_inference, sentIndex, ans, numMorph, reverse_again=True):
+    totalSeq = trainSentIndexNAnsInputRnn[sentIndex][0]
 
     for _ in range(20):
         if morphs[int(totalSeq[-1])] == "<EOS>":
@@ -52,6 +47,11 @@ def inferSeq(tf_sess, tf_inference, ans, numMorph):
         sys.stdout.write(morphs[int(idx)] + " ")
 
     sys.stdout.write("\n")
+
+    if reverse_again:
+        inferSeq(tf_sess, tf_inference, sentIndex, 1-ans, numMorph, reverse_again=False)
+
+
 
 
 def define_argparser():
@@ -78,8 +78,14 @@ if __name__ == "__main__":
     x = graph.get_tensor_by_name("x:0")
     inference = graph.get_tensor_by_name("inference:0")
 
-    for _ in range(5):
-        inferSeq(sess, inference, 1, numMorph) # positive
+    num_infer = 20
 
-    for _ in range(5):
-        inferSeq(sess, inference, 0, numMorph) # negative
+    print("===== first word is picked from a POSITIVE sentence ===")
+    for _ in range(num_infer):
+        randomSentIndex = pickRandomSentIndexToStart(1)
+        inferSeq(sess, inference, randomSentIndex, 1, numMorph, reverse_again=True) # positive
+
+    print("===== First word is picked from a NEGATIVE sentence ===")
+    for _ in range(num_infer):
+        randomSentIndex = pickRandomSentIndexToStart(0)
+        inferSeq(sess, inference, randomSentIndex, 0, numMorph, reverse_again=True) # negative

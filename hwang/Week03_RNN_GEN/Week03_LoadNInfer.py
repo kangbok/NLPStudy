@@ -4,8 +4,8 @@ from argparse import ArgumentParser
 
 import tensorflow as tf
 
-from Week03_Seq2Seq import trainSentIndexNAnsInputRnn, morphs, numMorph, seqLen
-from Week03_Seq2Seq import batchIndexesToInputOneHots
+from Week03_RNN_GEN import trainSentIndexNAnsInputRnn, morphs, numMorph, seqLen
+from Week03_RNN_GEN import batchIndexesToInputOneHots
 
 
 def inferOne(tf_sess, tf_inference, morphIndexes, ans, numMorph):

@@ -80,12 +80,12 @@ if __name__ == "__main__":
 
     num_infer = 20
 
-    print("===== first word is picked from a POSITIVE sentence ===")
+    print("===== Starting from the beginning word of randomly selected POSITIVE sentence ===")
     for _ in range(num_infer):
         randomSentIndex = pickRandomSentIndexToStart(1)
         inferSeq(sess, inference, randomSentIndex, 1, numMorph, reverse_again=True) # positive
 
-    print("===== First word is picked from a NEGATIVE sentence ===")
+    print("===== Starting from the beginning word of randomly selected NE sentence ===")
     for _ in range(num_infer):
         randomSentIndex = pickRandomSentIndexToStart(0)
         inferSeq(sess, inference, randomSentIndex, 0, numMorph, reverse_again=True) # negative

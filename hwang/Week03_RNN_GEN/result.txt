@@ -1,0 +1,87 @@
+EPOCH 10 result
+
+===== First word picked from a POSITIVE sentence ===
+Positive - 이/Noun 영화/Noun 를/Josa 보다/Verb 하다/Verb ./Punctuation <EOS>
+Negative - 이/Noun 영화/Noun 를/Josa 보다/Verb 하다/Verb ./Punctuation <EOS>
+Positive - 어리다/Verb 때/Noun 보다/Verb 재밌다/Adjective 보다/Verb <EOS>
+Negative - 어리다/Verb 때/Noun 보다/Verb 재밌다/Adjective 보다/Verb <EOS>
+Positive - 감동/Noun 적/Suffix 인/Josa 영화/Noun <EOS>
+Negative - 감동/Noun 적/Suffix 인/Josa 영화/Noun <EOS>
+Positive - 전효성/Noun 이/Josa 나오다/Verb .../Punctuation <EOS>
+Negative - 전효성/Noun 이/Josa 나오다/Verb .../Punctuation <EOS>
+Positive - 매우/Noun 재밌다/Adjective 보다/Verb ./Punctuation <EOS>
+Negative - 매우/Noun 재밌다/Adjective 보다/Verb ./Punctuation <EOS>
+Positive - 아/Exclamation ../Punctuation 정말/Noun 재밌다/Adjective 보다/Verb ../Punctuation <EOS>
+Negative - 아/Exclamation ../Punctuation 정말/Noun 재밌다/Adjective 보다/Verb ../Punctuation <EOS>
+Positive - 주인공/Noun 이/Josa 너무/Adverb 좋다/Adjective ./Punctuation <EOS>
+Negative - 주인공/Noun 이/Josa 너무/Adverb 좋다/Adjective ./Punctuation <EOS>
+Positive - 나름/Noun 재밌다/Adjective 보다/Verb ./Punctuation <EOS>
+Negative - 나름/Noun 재밌다/Adjective 보다/Verb ./Punctuation <EOS>
+Positive - 숨다/Verb 명작/Noun 이다/Josa ./Punctuation <EOS>
+Negative - 숨다/Verb 명작/Noun 이다/Josa ./Punctuation <EOS>
+Positive - 난/Noun 재밌다/Adjective 보다/Verb ./Punctuation <EOS>
+Negative - 난/Noun 재밌다/Adjective 보다/Verb ./Punctuation <EOS>
+Positive - 이정/Noun 도/Josa 영화/Noun 를/Josa 만들다/Verb 영화/Noun <EOS>
+Negative - 이정/Noun 도/Josa 영화/Noun 를/Josa 만들다/Verb 영화/Noun <EOS>
+Positive - 다시/Noun 보다/Verb 재밌다/Adjective ./Punctuation <EOS>
+Negative - 다시/Noun 보다/Verb 재밌다/Adjective ./Punctuation <EOS>
+Positive - 님/Suffix 의/Josa 영화/Noun 를/Josa 보다/Verb ./Punctuation <EOS>
+Negative - 님/Suffix 의/Josa 영화/Noun 를/Josa 보다/Verb ./Punctuation <EOS>
+Positive - 최영/Noun 의/Josa 을/Josa 보다/Verb <EOS>
+Negative - 최영/Noun 의/Josa 을/Josa 보다/Verb <EOS>
+Positive - 지나치다/Verb 영화/Noun <EOS>
+Negative - 지나치다/Verb 영화/Noun <EOS>
+Positive - '/Punctuation 보다/Verb '/Punctuation '/Punctuation '/Punctuation '/Punctuation '/Punctuation '/Punctuation '/Punctuation '/Punctuation '/Punctuation '/Punctuation '/Punctuation '/Punctuation '/Punctuation '/Punctuation '/Punctuation '/Punctuation '/Punctuation '/Punctuation '/Punctuation
+Negative - '/Punctuation 보다/Verb '/Punctuation '/Punctuation '/Punctuation '/Punctuation '/Punctuation '/Punctuation '/Punctuation '/Punctuation '/Punctuation '/Punctuation '/Punctuation '/Punctuation '/Punctuation '/Punctuation '/Punctuation '/Punctuation '/Punctuation '/Punctuation '/Punctuation '/Punctuation '/Punctuation '/Punctuation '/Punctuation '/Punctuation '/Punctuation '/Punctuation '/Punctuation '/Punctuation '/Punctuation '/Punctuation '/Punctuation '/Punctuation '/Punctuation '/Punctuation '/Punctuation '/Punctuation '/Punctuation '/Punctuation '/Punctuation
+Positive - 서로/Noun 의/Josa 사랑/Noun 을/Josa 하다/Verb ./Punctuation <EOS>
+Negative - 서로/Noun 의/Josa 사랑/Noun 을/Josa 하다/Verb ./Punctuation <EOS>
+Positive - 난/Noun 재밌다/Adjective 보다/Verb ./Punctuation <EOS>
+Negative - 난/Noun 재밌다/Adjective 보다/Verb ./Punctuation <EOS>
+Positive - 꽤/Noun 괜찮다/Adjective 영화/Noun 이다/Verb ./Punctuation <EOS>
+Negative - 꽤/Noun 괜찮다/Adjective 영화/Noun 이다/Verb ./Punctuation <EOS>
+Positive - 최고/Noun 의/Josa 영화/Noun <EOS>
+Negative - 최고/Noun 의/Josa 영화/Noun <EOS>
+
+
+
+===== First word picked from a NEGATIVE sentence ===
+Negative - 홈페이지/Noun 도/Josa 없다/Adjective ./Punctuation <EOS>
+Positive - 홈페이지/Noun 도/Josa 없다/Adjective ./Punctuation <EOS>
+Negative - 액션/Noun 은/Josa 없다/Adjective ./Punctuation <EOS>
+Positive - 액션/Noun 은/Josa 없다/Adjective ./Punctuation <EOS>
+Negative - 불륜/Noun 을/Josa 하다/Verb ./Punctuation <EOS>
+Positive - 불륜/Noun 을/Josa 하다/Verb ./Punctuation <EOS>
+Negative - 매끄럽다/Adjective 않다/Verb ./Punctuation <EOS>
+Positive - 매끄럽다/Adjective 않다/Verb ./Punctuation <EOS>
+Negative - 극/Modifier 장가/Noun 서/Josa 보다/Verb 영화/Noun <EOS>
+Positive - 극/Modifier 장가/Noun 서/Josa 보다/Verb 영화/Noun <EOS>
+Negative - 잔뜩/Noun 의/Josa 영화/Noun 가/Josa 아니다/Adjective ./Punctuation <EOS>
+Positive - 잔뜩/Noun 의/Josa 영화/Noun 가/Josa 아니다/Adjective ./Punctuation <EOS>
+Negative - 대체/Noun 왜/Noun 이렇게/Adverb 평점/Noun 이/Josa 높다/Adjective ?/Punctuation <EOS>
+Positive - 대체/Noun 왜/Noun 이렇게/Adverb 평점/Noun 이/Josa 높다/Adjective ?/Punctuation <EOS>
+Negative - 코미디/Noun 영화/Noun 는/Josa 아니다/Adjective ./Punctuation <EOS>
+Positive - 코미디/Noun 영화/Noun 는/Josa 아니다/Adjective ./Punctuation <EOS>
+Negative - 연기/Noun 가/Josa 너무/Adverb 좋다/Adjective ./Punctuation <EOS>
+Positive - 연기/Noun 가/Josa 너무/Adverb 좋다/Adjective ./Punctuation <EOS>
+Negative - 책/Noun 을/Josa 보다/Verb 영화/Noun <EOS>
+Positive - 책/Noun 을/Josa 보다/Verb 영화/Noun <EOS>
+Negative - 완전/Noun 재밌다/Adjective <EOS>
+Positive - 완전/Noun 재밌다/Adjective <EOS>
+Negative - 아/Exclamation ../Punctuation <EOS>
+Positive - 아/Exclamation ../Punctuation <EOS>
+Negative - ㅡ/KoreanParticle ./Punctuation ㅡ/KoreanParticle <EOS>
+Positive - ㅡ/KoreanParticle ./Punctuation ㅡ/KoreanParticle <EOS>
+Negative - 진짜/Noun 재미없다/Adjective ./Punctuation <EOS>
+Positive - 진짜/Noun 재미없다/Adjective ./Punctuation <EOS>
+Negative - 감독/Noun 의/Josa 영화/Noun 는/Josa 아니다/Adjective ./Punctuation <EOS>
+Positive - 감독/Noun 의/Josa 영화/Noun 는/Josa 아니다/Adjective ./Punctuation <EOS>
+Negative - 좀/Noun 보다/Verb ./Punctuation <EOS>
+Positive - 좀/Noun 보다/Verb ./Punctuation <EOS>
+Negative - 재미없다/Adjective <EOS>
+Positive - 재미없다/Adjective <EOS>
+Negative - 영화/Noun 는/Josa 아니다/Adjective ./Punctuation <EOS>
+Positive - 영화/Noun 는/Josa 아니다/Adjective ./Punctuation <EOS>
+Negative - 귀신/Noun 이/Josa 나오다/Verb ./Punctuation <EOS>
+Positive - 귀신/Noun 이/Josa 나오다/Verb ./Punctuation <EOS>
+Negative - 중학교/Noun 때/Noun 보다/Verb 영화/Noun ./Punctuation <EOS>
+Positive - 중학교/Noun 때/Noun 보다/Verb 영화/Noun ./Punctuation <EOS>

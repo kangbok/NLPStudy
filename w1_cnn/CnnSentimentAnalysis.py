@@ -31,13 +31,15 @@ b2 = initialize_bias([10])
 b3 = initialize_bias([10])
 b4 = initialize_bias([10])
 b5 = initialize_bias([10])
-#
+
+# convolution 수행
 conv1 = (tf.nn.conv2d(x_, kernel1, strides=[1, 1, 1, 1], padding="VALID") + b1)
 conv2 = (tf.nn.conv2d(x_, kernel2, strides=[1, 1, 1, 1], padding="VALID") + b2)
 conv3 = (tf.nn.conv2d(x_, kernel3, strides=[1, 1, 1, 1], padding="VALID") + b3)
 conv4 = (tf.nn.conv2d(x_, kernel4, strides=[1, 1, 1, 1], padding="VALID") + b4)
 conv5 = (tf.nn.conv2d(x_, kernel5, strides=[1, 1, 1, 1], padding="VALID") + b5)
 
+# max pooling 수행
 pool1 = tf.nn.max_pool(conv1, ksize=[1, 100, 1, 1], strides=[1, 1, 1, 1], padding="VALID")
 pool2 = tf.nn.max_pool(conv2, ksize=[1, 99, 1, 1], strides=[1, 1, 1, 1], padding="VALID")
 pool3 = tf.nn.max_pool(conv3, ksize=[1, 98, 1, 1], strides=[1, 1, 1, 1], padding="VALID")
@@ -52,6 +54,7 @@ fv_part5 = tf.reshape(pool5, [-1, 10])
 
 feature_vector = tf.concat([fv_part1, fv_part2, fv_part3, fv_part4, fv_part5], 1)
 
+# FCN 첫 번째 레이어
 fcn1_w = initialize_weight_matrix([50, 512])
 fcn1_b = initialize_bias([512])
 h_fcn1 = tf.nn.relu(tf.matmul(feature_vector, fcn1_w) + fcn1_b)
@@ -59,9 +62,11 @@ h_fcn1 = tf.nn.relu(tf.matmul(feature_vector, fcn1_w) + fcn1_b)
 keep_prob = tf.placeholder("float")
 h_fcn1_drop = tf.nn.dropout(h_fcn1, keep_prob) # dropout 해줌
 
+# FCN 두 번째 레이어
 fcn2_w = initialize_weight_matrix([512, 2])
 fcn2_b = initialize_bias([2])
 
+# softmax 형태로 아웃풋 뽑기
 y_conv = tf.nn.softmax(tf.matmul(h_fcn1_drop, fcn2_w) + fcn2_b)
 
 # 평가 영역

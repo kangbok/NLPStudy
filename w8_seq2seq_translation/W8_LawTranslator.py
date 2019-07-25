@@ -1,3 +1,8 @@
+#
+# tensorflow의 contrib.seq2seq 패키지를 이용한 법령 번역기.
+# 이용한 데이터는 resource/HandMadeOneDocument.json으로, 극소량의 데이터만 이용하였고 실제 번역기는 W11_AttentionTranslator를 참고.
+#
+
 import os
 import pickle
 

@@ -1,9 +1,17 @@
+#
+# 대한민국 영문법령 홈페이지를 크롤링하여 파일로 저장하는 코드.
+#
+
 from bs4 import BeautifulSoup, Tag
 from selenium import webdriver
 
 
-driver1 = webdriver.Chrome("E:/Tools/chromeDriver/chromedriver.exe")
-driver2 = webdriver.Chrome("E:/Tools/chromeDriver/chromedriver.exe")
+WEB_DRIVER_PATH = "E:/Tools/chromeDriver/chromedriver.exe"
+RESULT_SAVE_PATH = "datasource/raw_text.txt"
+
+
+driver1 = webdriver.Chrome(WEB_DRIVER_PATH)
+driver2 = webdriver.Chrome(WEB_DRIVER_PATH)
 main_url = "https://elaw.klri.re.kr"
 
 out_list = [] # 결과 저장 리스트
@@ -125,7 +133,7 @@ for hseq in range(initial_hseq, 50000):
             # print(hang_eng_text_list[i])
             # print(hang_kor_text_list[i])
 
-            with open("datasource/raw_text.txt", "a") as f:
+            with open(RESULT_SAVE_PATH, "a") as f:
                 f.write(hang_kor_text_list[i].replace("\t", " ") + "\t" + hang_eng_text_list[i].replace("\t", " ") + "\n")
 
     previous_law_title = current_law_title

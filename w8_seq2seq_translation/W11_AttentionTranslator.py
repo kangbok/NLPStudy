@@ -1,3 +1,7 @@
+#
+# tensorflow의 contrib.seq2seq 패키지의 attention을 이용하여 구현한 seq2seq.
+#
+
 import os
 import pickle
 

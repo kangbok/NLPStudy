@@ -1,3 +1,7 @@
+#
+# W11_AttentionTranslator.py에서 만든 모델 파일이 있을 경우, 해당 파일을 불러와서 새로운 데이터로 다시 학습 시키는 코드.
+#
+
 import os
 import pickle
 
@@ -147,7 +151,7 @@ with tf.Session() as sess:
 
     for epoch in range(EPOCH):
         for idx in range(0, len(encoder_corpus), BATCH_SIZE):
-            if cnt > 37500:
+            if cnt > 1350600:
                 is_start = True
 
             if not is_start:

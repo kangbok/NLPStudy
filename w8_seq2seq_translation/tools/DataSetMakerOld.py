@@ -1,3 +1,7 @@
+#
+# resource/HandMadeOneDocument.json 파일을 불러와 데이터셋 형태로 변환하는 것.
+#
+
 import json
 import pickle
 

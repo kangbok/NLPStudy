@@ -1,3 +1,7 @@
+#
+# DataSetMaker.py 에서 만든 데이터셋에 대한 vocab 사전을 만드는 코드
+#
+
 import pickle
 
 

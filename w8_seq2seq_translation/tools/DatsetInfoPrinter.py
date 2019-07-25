@@ -1,3 +1,7 @@
+#
+# DataSetMaker.py, VocabMaker.py 에서 만들어진 데이터셋의 일부 통계치를 추출한다.
+#
+
 import pickle
 
 ### Korean dataset loading

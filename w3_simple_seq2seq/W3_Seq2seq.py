@@ -1,3 +1,8 @@
+#
+# tensorflow의 rnn 내부 동작을 정의할 수 있는 'raw_rnn'이라는 것을 이용한 seq2seq.
+# 단, raw_rnn은 tensorflow에서도 공식적으로 사용을 추천하지는 않는 기능이므로 맛만 보자.
+#
+
 import os
 import pickle
 

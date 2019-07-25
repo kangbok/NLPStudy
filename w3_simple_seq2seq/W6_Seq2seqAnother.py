@@ -1,3 +1,7 @@
+#
+# tensorflow의 contrib 패키지 내의 seq2seq 패키지를 이용하여 구현한 seq2seq.
+#
+
 import os
 import pickle
 

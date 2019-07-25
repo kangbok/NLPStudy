@@ -1,3 +1,8 @@
+#
+# 파일로 저장한 모델을 실행시켜서 번역을 진행하는 코드.
+# 소량의 데이터만 이용했으므로, W11_Runner를 보는 것을 추천.
+#
+
 import pickle
 
 import numpy as np
@@ -18,7 +23,7 @@ with tf.Session() as sess:
     predictions = graph.get_tensor_by_name("predictions:0")
     encoder_x = graph.get_tensor_by_name("encoder_x:0")
 
-    sentence = "배타적 경제수역법"
+    sentence = "해양환경의 보호 및 보전"
     word_list = sentence.split(" ")
     input_x = list(map(lambda x:vocab_idx_dict[x], word_list))
     INPUT_LENGTH = 35

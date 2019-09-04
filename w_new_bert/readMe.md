@@ -1,0 +1,1 @@
+google의 bert repository인 https://github.com/google-research/bert 를 다운 받은 후, 동일한 디렉토리에 run_custom_classifier.py 파일을 놓고 영화리뷰 데이터셋을 이용하면 된다.
